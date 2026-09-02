@@ -1,0 +1,13 @@
+{
+  "name": "arnacon-studio",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check": "node scripts/self-check.mjs",
+    "dev": "node scripts/serve.mjs",
+    "generate": "node scripts/generate.mjs",
+    "studio:check": "node scripts/self-check.mjs",
+    "studio:dev": "node scripts/serve.mjs",
+    "studio:generate": "node scripts/generate.mjs"
+  }
+}

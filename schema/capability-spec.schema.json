@@ -1,0 +1,123 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://arnacon.local/studio/capability-spec.schema.json",
+  "title": "Arnacon communication-client capability spec",
+  "description": "Intent layer only. Screens, controller methods, and events are compiled — never invented. localId is injected at runtime and must not appear here.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "kind",
+    "runtime",
+    "identity",
+    "sessions",
+    "messaging"
+  ],
+  "properties": {
+    "version": { "const": 1 },
+    "kind": { "const": "communication-client" },
+    "app": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "summary": { "type": "string", "maxLength": 280 }
+      }
+    },
+    "runtime": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode"],
+      "properties": {
+        "mode": {
+          "enum": ["webview", "browser-relay", "both"]
+        }
+      }
+    },
+    "identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source", "activeKinds"],
+      "properties": {
+        "source": { "const": "installed-product" },
+        "activeKinds": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "enum": ["arnacon", "whatsapp", "email", "temp"] }
+        },
+        "addressing": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "enum": ["email", "temp", "ens", "gsm"] }
+        }
+      }
+    },
+    "sessions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["direct"],
+      "properties": {
+        "direct": { "type": "boolean" },
+        "groups": { "type": "boolean" },
+        "rename": { "type": "boolean" },
+        "delete": { "type": "boolean" }
+      }
+    },
+    "messaging": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["text"],
+      "properties": {
+        "text": { "const": true },
+        "files": { "type": "boolean" },
+        "replies": { "type": "boolean" },
+        "edits": { "type": "boolean" },
+        "forwards": { "type": "boolean" },
+        "delete": { "type": "boolean" },
+        "reactions": { "type": "boolean" },
+        "typing": { "type": "boolean" },
+        "readReceipts": { "type": "boolean" },
+        "block": { "type": "boolean" },
+        "reachability": { "type": "boolean" }
+      }
+    },
+    "calls": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "voice": { "type": "boolean" },
+        "video": { "type": "boolean" },
+        "mute": { "type": "boolean" },
+        "hold": { "type": "boolean" },
+        "dtmf": { "type": "boolean" },
+        "transfer": { "type": "boolean" },
+        "switchCamera": { "type": "boolean" },
+        "audioDevice": { "type": "boolean" },
+        "dialer": { "type": "boolean" }
+      }
+    },
+    "device": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "camera": { "type": "boolean" },
+        "imagePicker": { "type": "boolean" },
+        "contactPicker": { "type": "boolean" },
+        "qr": { "type": "boolean" },
+        "downloadFile": { "type": "boolean" }
+      }
+    },
+    "theme": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "preset": { "enum": ["arnacon-default"] }
+      }
+    },
+    "warnings": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  }
+}

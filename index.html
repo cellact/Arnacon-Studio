@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Arnacon app studio</title>
+  <link rel="stylesheet" href="studio.css">
+</head>
+<body>
+  <header>
+    <div>
+      <h1>Arnacon app studio</h1>
+      <p>Test the pipeline: prompt fills the spec, the compiler derives screens and methods, then a mock app preview is generated.</p>
+    </div>
+  </header>
+  <main class="layout">
+    <section class="col">
+      <h2>User input</h2>
+      <div class="pad">
+        <label class="field-label" for="prompt">What should this app do?</label>
+        <textarea id="prompt" placeholder="e.g. A family messenger with group chats, photos, and video calls. No WhatsApp."></textarea>
+        <div class="chips" id="exampleChips"></div>
+        <div class="actions">
+          <button class="primary" id="createBtn" type="button">Create app</button>
+          <button class="chip" id="cloneBtn" type="button">Start from Arnacon</button>
+        </div>
+        <p class="status" id="status"></p>
+        <div id="messages"></div>
+      </div>
+    </section>
+    <section class="col spec-col">
+      <h2>Capability spec</h2>
+      <div class="pad">
+        <p class="help">Interpreter output — edit flags and apply, or let the prompt fill this live.</p>
+        <textarea id="specView" class="spec-view" spellcheck="false"></textarea>
+        <div class="actions">
+          <button class="chip" id="applySpecBtn" type="button">Apply spec</button>
+        </div>
+        <p class="help">Derived screens</p>
+        <div class="chips" id="screenOut"></div>
+        <p class="help">Derived controller methods</p>
+        <div class="chips methods" id="methodOut"></div>
+        <p class="help">Derived events</p>
+        <div class="chips methods" id="eventOut"></div>
+        <p class="status" id="lintStatus"></p>
+        <div id="specWarn"></div>
+      </div>
+    </section>
+    <section class="col preview-col">
+      <h2>Preview</h2>
+      <div class="preview-wrap">
+        <div class="toolbar">
+          <label>Screen
+            <select id="screenSelect"></select>
+          </label>
+          <label>Identity
+            <select id="kindSelect"></select>
+          </label>
+          <button class="chip" id="downloadBtn" type="button">Download app</button>
+        </div>
+        <div class="chips" id="screenChips"></div>
+        <div id="warnBox"></div>
+        <div class="phone">
+          <iframe id="preview" title="Generated app preview"></iframe>
+        </div>
+      </div>
+    </section>
+  </main>
+  <script type="module" src="studio.mjs"></script>
+</body>
+</html>
