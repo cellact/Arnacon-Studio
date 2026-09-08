@@ -1,4 +1,5 @@
 import { createMockController } from '../preview/mock-controller.mjs';
+import { installBrowserCall } from './browser-call.mjs';
 import { installBrowserPairing } from './browser-pairing.mjs';
 
 function pageHash() {
@@ -94,7 +95,7 @@ const SCREEN_FILES = {
 function hashFor(screen, extra = {}) {
   const params = new URLSearchParams(pageHash());
   params.set('screen', screen || params.get('screen') || 'MAIN');
-  for (const key of ['localId', 'identityKind', 'sessionId', 'remoteId', 'sessionName', 'from', 'to', 'videoCall']) {
+  for (const key of ['localId', 'identityKind', 'sessionId', 'remoteId', 'sessionName', 'from', 'to', 'callId', 'videoCall']) {
     const value = extra[key];
     if (value !== undefined && value !== '' && value !== false) params.set(key, String(value));
   }
@@ -105,8 +106,19 @@ export async function bootHost() {
   const localId = localIdFromLocation();
   const controller = await createController(localId);
   if (localId) controller.localId = localId;
+  if (typeof controller.endCall !== 'function' && typeof controller.rejectCall === 'function') {
+    controller.endCall = function endCall(id) {
+      const bc = window.top.browserCall;
+      if (bc && typeof bc.close === 'function') bc.close();
+      controller.rejectCall(id);
+    };
+  }
   window.controller = controller;
   window.top.controller = controller;
+  if (!hasNativeBridge() && typeof controller._send === 'function') {
+    window.browserCall = installBrowserCall(controller);
+    window.top.browserCall = window.browserCall;
+  }
 
   const iframe = document.getElementById('skin');
   const entry = await findSkinEntry();

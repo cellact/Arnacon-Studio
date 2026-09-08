@@ -42,3 +42,21 @@ Per-product `htmlUrl` on the installed product is not wired yet. Until it is, ov
 | `localId = 'alice.eth'` | Read `localId` from the hash |
 
 Skin (HTML/CSS) is free. The controller contract is locked.
+
+## Messages and calls (match ArnaconWeb)
+
+The skin must use `arnacon-controller` payloads:
+
+| Surface | Contract |
+|---|---|
+| Session preview | `lastMessageContent` |
+| Message body | `content` / `author` (mine when `author === localId`) |
+| `new-message` | `{ message }` |
+| Send | `sendMessage(sessionId, text)` after `createSession` / `getSessionId` |
+| Image | `imagePicker()` → `imageId` → `sendFileMessage` |
+| Outgoing call | `callSession` / `videoCallSession` |
+| Incoming call | `receiving-call` then `window.top.browserCall.accept(id, { video })` or `acceptCall(id)` |
+| Hang up | `rejectCall(callId)` |
+
+Computer-tab audio/video is `window.top.browserCall` on the host. Skin HTML must not open a WebSocket or `RTCPeerConnection`. Ploy preview (no Arnacon parent) cannot pair, message, or call.
+

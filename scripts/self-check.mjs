@@ -201,6 +201,14 @@ ok(defaultBuild.compiled.methods.includes('scanQrCode'));
 ok(defaultBuild.compiled.methods.includes('startBrowserPairing'));
 ok(/startBrowserPairing/.test(defaultBuild.files['pairing.html']));
 ok(!/new\s+WebSocket/.test(defaultBuild.files['pairing.html']));
+ok(/lastMessageContent/.test(defaultBuild.files['mainscreen.html']));
+ok(/msg\.content/.test(defaultBuild.files['chat.html']) || /messageText\(msg\)/.test(defaultBuild.files['chat.html']));
+ok(/sendMessage\(String\(sessionId\), text\)/.test(defaultBuild.files['chat.html']));
+ok(!/sendMessage\([^)]+,\s*[^)]+,\s*(true|false)/.test(defaultBuild.files['chat.html']));
+ok(/rejectCall/.test(defaultBuild.files['voicecall.html']));
+ok(/browserCall/.test(defaultBuild.files['incomingcall.html']));
+ok(/acceptIncoming/.test(defaultBuild.files['incomingcall.html']));
+ok(readFileSync(join(root, 'host/boot.mjs'), 'utf8').includes('installBrowserCall'));
 ok(!lintOutput({ 'pairing.html': 'new WebSocket("wss://x")' }, sdkBindings()).ok);
 
 const skinTmp = mkdtempSync(join(tmpdir(), 'arnacon-skin-'));

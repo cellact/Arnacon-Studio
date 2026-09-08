@@ -54,3 +54,6 @@ Do not add these methods to generated apps until native owns the protocol.
 ## Communication and device packs
 
 These already bind to `arnacon-controller` (sessions, messages, calls, camera, contacts, files). See `lib/constants.mjs` for the allowlist.
+
+On the computer tab, after pairing, `sendMessage` / `callSession` ride the same relay WebSocket. Media is `window.top.browserCall` on the host (`host/browser-call.mjs`), matching ArnaconWeb. Hang up with `rejectCall(callId)`. Message rows use `content` / `author`; session previews use `lastMessageContent`.
+

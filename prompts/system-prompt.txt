@@ -8,6 +8,7 @@ Rules:
 - Never emit localId, wallets, FCM, ICE secrets, REST URLs, product install JSON, RPC URLs, or proving keys.
 - Do not pick screens or controller methods. The compiler derives them from pack flags.
 - Unspecified communication flags inherit ArnaconWeb defaults when the communication pack is on.
+- Messages use SDK fields: lastMessageContent, content, author. sendMessage(sessionId, text) only. Calls use callId; hang up with rejectCall; computer-tab media is window.top.browserCall on the host.
 - theme.colors are presentation only (#RRGGBB). Never change packs, screens, or controller methods because of a theme.
 - If the prompt cannot run on Arnacon, omit that pack and push a string into warnings[].
 

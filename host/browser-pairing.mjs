@@ -83,6 +83,26 @@ function attachBrowserRelayPairing(controller, options) {
   let status = 'idle';
   let room = read(ROOM_KEY);
   let sendBuffer = [];
+  let keepaliveTimer = null;
+
+  function clearKeepalive() {
+    if (keepaliveTimer) {
+      clearInterval(keepaliveTimer);
+      keepaliveTimer = null;
+    }
+  }
+
+  function startKeepalive(ws) {
+    clearKeepalive();
+    keepaliveTimer = setInterval(() => {
+      if (!ws || ws.readyState !== WebSocket.OPEN) return;
+      try {
+        ws.send(JSON.stringify({ action: 'ws-ping', body: {} }));
+      } catch {
+        /* closed */
+      }
+    }, 15000);
+  }
 
   function snapshot() {
     return {
@@ -123,6 +143,7 @@ function attachBrowserRelayPairing(controller, options) {
   }
 
   function closeSocket() {
+    clearKeepalive();
     if (!socket) return;
     const ws = socket;
     socket = null;
@@ -169,6 +190,7 @@ function attachBrowserRelayPairing(controller, options) {
     ws.onopen = () => {
       if (socket !== ws) return;
       setStatus('waiting');
+      startKeepalive(ws);
       const token = read(TOKEN_KEY);
       if (token) sendPayload({ action: 'hello', body: { token } });
       flushBuffer();
