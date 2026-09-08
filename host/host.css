@@ -1,0 +1,8 @@
+html, body, #skin {
+  margin: 0;
+  height: 100%;
+  width: 100%;
+  border: 0;
+  background: #111;
+}
+#skin { display: block; }

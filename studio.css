@@ -136,12 +136,13 @@ button.primary {
   padding: 8px 12px;
   font-size: 13px;
 }
-.warn, .err {
+.warn, .err, .gap {
   border-radius: 10px;
   padding: 10px 12px;
   font-size: 13px;
 }
-.warn { background: rgba(230, 195, 92, 0.12); color: var(--warn); }
+.chip.pack { border-color: rgba(165, 110, 224, 0.45); }
+.warn, .gap { background: rgba(230, 195, 92, 0.12); color: var(--warn); }
 .err { background: rgba(255, 107, 107, 0.12); color: var(--danger); }
 .toolbar {
   display: flex;
@@ -149,14 +150,26 @@ button.primary {
   gap: 8px;
   align-items: end;
 }
-.toolbar label {
+.theme-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.theme-swatch {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  font-size: 12px;
+  font-size: 11px;
   color: var(--muted);
-  flex: 1;
-  min-width: 120px;
+}
+.theme-swatch input[type="color"] {
+  width: 44px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
 }
 .phone {
   width: min(100%, 390px);

@@ -4,9 +4,10 @@ import { compile } from './lib/compile.mjs';
 import { buildFromSpec } from './lib/pipeline.mjs';
 import { zipFiles } from './lib/zip.mjs';
 import { createMockController } from './preview/mock-controller.mjs';
+import { cssForTheme, DEFAULT_COLORS, resolveColors } from './lib/theme.mjs';
 
 const SCREEN_LABELS = {
-  MAIN: 'Chats',
+  MAIN: 'Home',
   CHAT: 'Conversation',
   NEW_CHAT: 'New chat',
   CREATE_GROUP: 'New group',
@@ -15,6 +16,7 @@ const SCREEN_LABELS = {
   INCOMING: 'Incoming call',
   DIALER: 'Dialer',
   PAIRING: 'Pair phone',
+  IDENTITIES: 'Identity',
 };
 
 const KIND_LABELS = {
@@ -32,6 +34,8 @@ const screenOut = document.getElementById('screenOut');
 const methodOut = document.getElementById('methodOut');
 const eventOut = document.getElementById('eventOut');
 const specWarn = document.getElementById('specWarn');
+const packOut = document.getElementById('packOut');
+const gapOut = document.getElementById('gapOut');
 const lintStatus = document.getElementById('lintStatus');
 const warnBox = document.getElementById('warnBox');
 const preview = document.getElementById('preview');
@@ -40,6 +44,8 @@ const screenSelect = document.getElementById('screenSelect');
 const kindSelect = document.getElementById('kindSelect');
 const screenChips = document.getElementById('screenChips');
 const downloadBtn = document.getElementById('downloadBtn');
+const themeRow = document.getElementById('themeRow');
+const skinChips = document.getElementById('skinChips');
 
 window.controller = createMockController();
 window.__studioPreview = {
@@ -57,6 +63,73 @@ let lastCompiled = null;
 let currentScreen = 'MAIN';
 let previewTimer = 0;
 const objectUrls = [];
+
+const THEME_FIELDS = [
+  { key: 'accent', label: 'Accent' },
+  { key: 'bg', label: 'Background' },
+  { key: 'text', label: 'Text' },
+  { key: 'fill', label: 'Surfaces' },
+];
+
+const SKINS = [
+  { name: 'Arnacon', preset: 'arnacon-default', colors: { ...DEFAULT_COLORS } },
+  { name: 'Ocean', preset: 'custom', colors: { ...DEFAULT_COLORS, accent: '#0a7aff', accent2: '#003d99', fill: '#e8f1ff' } },
+  { name: 'Forest', preset: 'custom', colors: { ...DEFAULT_COLORS, accent: '#248a3d', accent2: '#0d4a1f', fill: '#eaf6ee' } },
+  { name: 'Ink', preset: 'custom', colors: { ...DEFAULT_COLORS, bg: '#111111', text: '#f5f5f5', fill: '#1c1c1e', muted: '#8e8e93', accent: '#a56ee0', accent2: '#5b3d8f' } },
+];
+
+function applyTheme(theme, { rebuild } = {}) {
+  lastSpec = {
+    ...lastSpec,
+    theme: {
+      preset: theme.preset || 'custom',
+      colors: resolveColors(theme),
+    },
+  };
+  showLiveSpec(lastSpec);
+  if (lastFiles) {
+    lastFiles = { ...lastFiles, 'app.css': cssForTheme(lastSpec.theme) };
+    showPreview(lastFiles, currentScreen);
+  } else if (rebuild) {
+    buildFromCurrentSpec();
+  }
+}
+
+function syncThemeControls(spec) {
+  const colors = resolveColors(spec.theme);
+  for (const { key } of THEME_FIELDS) {
+    const el = document.getElementById(`theme-${key}`);
+    if (el) el.value = colors[key];
+  }
+  for (const chip of skinChips.querySelectorAll('.chip')) {
+    const skin = SKINS.find((s) => s.name === chip.dataset.skin);
+    chip.classList.toggle('active', !!(skin && skin.colors.accent === colors.accent && skin.colors.bg === colors.bg));
+  }
+}
+
+function initThemeUi() {
+  themeRow.innerHTML = THEME_FIELDS.map(({ key, label }) => `
+    <label class="theme-swatch">${label}
+      <input type="color" id="theme-${key}" value="${DEFAULT_COLORS[key]}">
+    </label>
+  `).join('');
+  for (const { key } of THEME_FIELDS) {
+    document.getElementById(`theme-${key}`).addEventListener('input', (event) => {
+      const colors = { ...resolveColors(lastSpec.theme), [key]: event.target.value };
+      applyTheme({ preset: 'custom', colors });
+    });
+  }
+  skinChips.innerHTML = '';
+  for (const skin of SKINS) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'chip';
+    btn.dataset.skin = skin.name;
+    btn.textContent = skin.name;
+    btn.addEventListener('click', () => applyTheme(skin));
+    skinChips.appendChild(btn);
+  }
+}
 
 function revokeUrls() {
   while (objectUrls.length) URL.revokeObjectURL(objectUrls.pop());
@@ -89,6 +162,7 @@ function fileForScreen(screen) {
   if (screen === 'INCOMING') return 'incomingcall.html';
   if (screen === 'PAIRING') return 'pairing.html';
   if (screen === 'DIALER') return 'dialer.html';
+  if (screen === 'IDENTITIES') return 'identities.html';
   if (screen === 'CALL') return 'voicecall.html';
   return 'mainscreen.html';
 }
@@ -152,10 +226,19 @@ function showLiveSpec(spec) {
   specWarn.innerHTML = (spec.warnings || [])
     .map((w) => `<div class="warn">${w}</div>`)
     .join('');
+  packOut.innerHTML = (compiled.packs || [])
+    .map((p) => `<span class="chip pack">${p}</span>`)
+    .join('') || '<span class="help">Shell only (MAIN)</span>';
+  gapOut.innerHTML = (compiled.nativeGaps || [])
+    .map((g) => `<div class="gap"><strong>${g.pack}</strong> — ${g.message}${g.missingMethods?.length ? ` Missing: ${g.missingMethods.join(', ')}.` : ''}</div>`)
+    .join('') || '<p class="help">No blocked packs on this spec.</p>';
+  syncThemeControls(spec);
 }
 
-function interpretPrompt() {
+function interpretPrompt({ resetTheme = false } = {}) {
+  const keptTheme = lastSpec?.theme;
   const spec = interpret(promptEl.value, examples);
+  if (!resetTheme && keptTheme) spec.theme = structuredClone(keptTheme);
   showLiveSpec(spec);
   return spec;
 }
@@ -207,7 +290,7 @@ function buildFromCurrentSpec() {
 }
 
 function createFromPrompt() {
-  interpretPrompt();
+  interpretPrompt({ resetTheme: true });
   const n = lastSpec.warnings?.length || 0;
   statusEl.textContent = n ? `Created with ${n} note${n === 1 ? '' : 's'}.` : 'Creating preview…';
   statusEl.className = 'status';
@@ -224,15 +307,13 @@ function schedulePreview() {
 }
 
 async function loadExamples() {
-  const names = [
-    'examples/01-direct-chat.json',
-    'examples/02-family-groups-video.json',
-    'examples/03-email-support-inbox.json',
-  ];
+  const res = await fetch('examples/index.json');
+  if (!res.ok) throw new Error('Could not load examples/index.json');
+  const names = await res.json();
   examples = await Promise.all(names.map(async (name) => {
-    const res = await fetch(name);
-    if (!res.ok) throw new Error(`Could not load ${name}`);
-    return res.json();
+    const file = await fetch(`examples/${name}`);
+    if (!file.ok) throw new Error(`Could not load ${name}`);
+    return file.json();
   }));
   exampleChips.innerHTML = '';
   for (const example of examples) {
@@ -313,6 +394,7 @@ downloadBtn.addEventListener('click', () => {
 });
 
 downloadBtn.disabled = true;
+initThemeUi();
 
 try {
   await loadExamples();

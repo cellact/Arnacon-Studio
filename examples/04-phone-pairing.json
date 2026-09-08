@@ -1,0 +1,41 @@
+{
+  "id": "phone-pairing",
+  "title": "Phone pairing",
+  "prompt": "Pair my phone so I can use Arnacon in the browser. No chat.",
+  "spec": {
+    "version": 2,
+    "kind": "arnacon-app",
+    "app": {
+      "name": "Phone pairing",
+      "summary": "Browser-relay pairing shell. No messenger."
+    },
+    "runtime": {
+      "mode": "browser-relay"
+    },
+    "identity": {
+      "source": "installed-product",
+      "activeKinds": ["arnacon"],
+      "addressing": []
+    },
+    "capabilities": {
+      "identity": {
+        "switcher": false,
+        "pairing": true,
+        "qr": true
+      },
+      "device": {
+        "camera": false,
+        "imagePicker": false,
+        "contactPicker": false,
+        "qr": true,
+        "downloadFile": false
+      }
+    },
+    "theme": {
+      "preset": "arnacon-default"
+    },
+    "warnings": [
+      "Browser-relay requires the phone to stay paired on the WSS room."
+    ]
+  }
+}

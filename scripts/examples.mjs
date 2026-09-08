@@ -6,7 +6,8 @@ const examplesDir = join(dirname(fileURLToPath(import.meta.url)), '..', 'example
 
 export function loadExamples() {
   return readdirSync(examplesDir)
-    .filter((name) => name.endsWith('.json'))
+    .filter((name) => name.endsWith('.json') && name !== 'index.json')
     .sort()
-    .map((name) => JSON.parse(readFileSync(join(examplesDir, name), 'utf8')));
+    .map((name) => JSON.parse(readFileSync(join(examplesDir, name), 'utf8')))
+    .filter((example) => example && typeof example === 'object' && example.id && example.spec);
 }

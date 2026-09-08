@@ -8,6 +8,9 @@
     "generate": "node scripts/generate.mjs",
     "studio:check": "node scripts/self-check.mjs",
     "studio:dev": "node scripts/serve.mjs",
-    "studio:generate": "node scripts/generate.mjs"
+    "studio:generate": "node scripts/generate.mjs",
+    "host": "node host/serve.mjs",
+    "seed-skin": "node scripts/seed-skin.mjs",
+    "lint:skin": "node scripts/lint-skin.mjs"
   }
 }

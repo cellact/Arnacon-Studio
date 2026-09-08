@@ -1,0 +1,61 @@
+{
+  "id": "zk-subscription",
+  "title": "ZK subscription (downscoped)",
+  "prompt": "A ZK subscription service for a private group",
+  "spec": {
+    "version": 2,
+    "kind": "arnacon-app",
+    "app": {
+      "name": "Private group",
+      "summary": "Group chat on an installed product. Subscription/ZK is not available on the controller."
+    },
+    "runtime": {
+      "mode": "webview"
+    },
+    "identity": {
+      "source": "installed-product",
+      "activeKinds": ["arnacon"],
+      "addressing": ["temp", "ens"]
+    },
+    "capabilities": {
+      "communication": {
+        "sessions": {
+          "direct": true,
+          "groups": true,
+          "rename": true,
+          "delete": true
+        },
+        "messaging": {
+          "text": true,
+          "files": false,
+          "replies": true,
+          "edits": true,
+          "forwards": false,
+          "delete": true,
+          "reactions": false,
+          "typing": true,
+          "readReceipts": true,
+          "block": false,
+          "reachability": false
+        },
+        "calls": {
+          "voice": false,
+          "video": false,
+          "mute": false,
+          "hold": false,
+          "dtmf": false,
+          "transfer": false,
+          "switchCamera": false,
+          "audioDevice": false,
+          "dialer": false
+        }
+      }
+    },
+    "theme": {
+      "preset": "arnacon-default"
+    },
+    "warnings": [
+      "Arnacon has no subscription API for generated apps. ZK proofs stay inside native; never put a proving key or RPC URL in the spec."
+    ]
+  }
+}

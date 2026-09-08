@@ -102,6 +102,15 @@ export function createMockController() {
     async contactPicker() { return { injectRemoteId: 'customer@example.com' }; },
     scanQrCode() { return { text: '' }; },
     downloadFile() {},
+    receiveData(raw) {
+      try {
+        const msg = typeof raw === 'string' ? JSON.parse(raw) : raw;
+        const eventName = msg?.action || msg?.event;
+        if (eventName) emit(eventName, msg.body || msg);
+      } catch {
+        /* native may send non-JSON; preview ignores it */
+      }
+    },
   };
   return controller;
 }

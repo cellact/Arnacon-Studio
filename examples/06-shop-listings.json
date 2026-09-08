@@ -1,0 +1,28 @@
+{
+  "id": "shop-listings",
+  "title": "Shop (downscoped)",
+  "prompt": "An on-chain shop with listings and checkout",
+  "spec": {
+    "version": 2,
+    "kind": "arnacon-app",
+    "app": {
+      "name": "Arnacon",
+      "summary": "Shell app. Commerce is not available on the controller."
+    },
+    "runtime": {
+      "mode": "webview"
+    },
+    "identity": {
+      "source": "installed-product",
+      "activeKinds": ["arnacon"],
+      "addressing": ["temp", "ens"]
+    },
+    "capabilities": {},
+    "theme": {
+      "preset": "arnacon-default"
+    },
+    "warnings": [
+      "Arnacon has no commerce API for generated apps."
+    ]
+  }
+}

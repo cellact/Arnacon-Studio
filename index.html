@@ -10,7 +10,7 @@
   <header>
     <div>
       <h1>Arnacon app studio</h1>
-      <p>Test the pipeline: prompt fills the spec, the compiler derives screens and methods, then a mock app preview is generated.</p>
+      <p>Skin the UI (colors, later full HTML) without changing Arnacon functions. Packs map onto native primitives. Missing APIs show as gaps, not fake backends.</p>
     </div>
   </header>
   <main class="layout">
@@ -36,6 +36,10 @@
         <div class="actions">
           <button class="chip" id="applySpecBtn" type="button">Apply spec</button>
         </div>
+        <p class="help">Enabled packs</p>
+        <div class="chips" id="packOut"></div>
+        <p class="help">Native gaps</p>
+        <div id="gapOut"></div>
         <p class="help">Derived screens</p>
         <div class="chips" id="screenOut"></div>
         <p class="help">Derived controller methods</p>
@@ -58,6 +62,9 @@
           </label>
           <button class="chip" id="downloadBtn" type="button">Download app</button>
         </div>
+        <p class="help">Look — these tokens restyle the preview. Chat, calls, and controller methods stay the same.</p>
+        <div class="chips" id="skinChips"></div>
+        <div class="theme-row" id="themeRow"></div>
         <div class="chips" id="screenChips"></div>
         <div id="warnBox"></div>
         <div class="phone">

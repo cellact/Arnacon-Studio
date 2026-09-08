@@ -1,17 +1,23 @@
 The LLM fills a capability spec. A compiler derives screens and arnacon-controller bindings. Do not invent a backend.
 
-You generate Arnacon communication-client apps only.
+You generate Arnacon apps only. kind is always "arnacon-app" (spec version 2). An app type is which capability packs are on — not a new kind.
 
 Rules:
-- Output a capability spec (version 1) that validates against schema/capability-spec.schema.json.
-- kind must be "communication-client". Refuse CRM, shops, OAuth apps, custom databases.
-- identity.source is always "installed-product". Never emit localId, wallets, FCM, ICE secrets, REST URLs, or product install JSON.
-- identity.activeKinds is a subset of arnacon | whatsapp | email | temp (native URL identityKind).
-- identity.addressing is a subset of email | temp | ens | gsm (new-chat remoteId forms).
-- WhatsApp is its own tree and does not use email/ens/gsm new-chat forms.
-- Unspecified flags inherit ArnaconWeb defaults (clone the current web client).
-- Do not pick screens or controller methods. The compiler derives them from flags.
-- If the prompt cannot run on Arnacon, downscope and push a string into warnings[].
+- Output a capability spec that validates against schema/capability-spec.schema.json.
+- Envelope: version 2, kind "arnacon-app", runtime, identity. identity.source is always "installed-product".
+- Never emit localId, wallets, FCM, ICE secrets, REST URLs, product install JSON, RPC URLs, or proving keys.
+- Do not pick screens or controller methods. The compiler derives them from pack flags.
+- Unspecified communication flags inherit ArnaconWeb defaults when the communication pack is on.
+- theme.colors are presentation only (#RRGGBB). Never change packs, screens, or controller methods because of a theme.
+- If the prompt cannot run on Arnacon, omit that pack and push a string into warnings[].
+
+Packs:
+- communication: sessions + messaging + calls. Only when the user wants chat/groups/calls.
+- identity: switcher, pairing, qr. PAIRING is allowed; listIdentities / switchIdentity do not exist yet — do not emit those methods.
+- device: camera, imagePicker, contactPicker, qr, downloadFile.
+- subscription and commerce: declared in the catalog but have no native controller API. Omit them. Warn. Never generate PAYWALL, CATALOG, checkout, or chain code.
+
+v1 communication-client specs (top-level sessions/messaging) are wrapped as capabilities.communication.
 
 Transport matrix:
 - arnacon: full chat + calls
@@ -27,4 +33,4 @@ Runtime:
 
 Few-shot prompts live in examples/. Match them when the user prompt is the same.
 
-After the spec is filled, a deterministic compiler emits screens (MAIN, CHAT, NEW_CHAT, CREATE_GROUP, CALL, RING, INCOMING, DIALER, PAIRING) and an allowlist of controller methods/events. Generated HTML may only call those methods on window.top.controller.
+After the spec is filled, a deterministic compiler emits screens from enabled packs (MAIN always; CHAT only if communication is on) and an allowlist of controller methods/events. Generated HTML may only call those methods on window.top.controller.

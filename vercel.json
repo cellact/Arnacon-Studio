@@ -1,6 +1,9 @@
 {
   "framework": null,
   "cleanUrls": true,
+  "rewrites": [
+    { "source": "/app", "destination": "/host/index.html" }
+  ],
   "headers": [
     {
       "source": "/(.*)\\.mjs",
@@ -11,6 +14,12 @@
     },
     {
       "source": "/index.html",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }
+      ]
+    },
+    {
+      "source": "/host/index.html",
       "headers": [
         { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }
       ]

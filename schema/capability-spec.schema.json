@@ -1,21 +1,19 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://arnacon.local/studio/capability-spec.schema.json",
-  "title": "Arnacon communication-client capability spec",
-  "description": "Intent layer only. Screens, controller methods, and events are compiled — never invented. localId is injected at runtime and must not appear here.",
+  "title": "Arnacon app capability spec",
+  "description": "Version 2 envelope. Intent layer only. Screens, controller methods, and events are compiled from capability packs — never invented. localId is injected at runtime and must not appear here. v1 communication-client specs are wrapped into capabilities.communication.",
   "type": "object",
   "additionalProperties": false,
   "required": [
     "version",
     "kind",
     "runtime",
-    "identity",
-    "sessions",
-    "messaging"
+    "identity"
   ],
   "properties": {
-    "version": { "const": 1 },
-    "kind": { "const": "communication-client" },
+    "version": { "const": 2 },
+    "kind": { "const": "arnacon-app" },
     "app": {
       "type": "object",
       "additionalProperties": false,
@@ -53,66 +51,120 @@
         }
       }
     },
-    "sessions": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["direct"],
-      "properties": {
-        "direct": { "type": "boolean" },
-        "groups": { "type": "boolean" },
-        "rename": { "type": "boolean" },
-        "delete": { "type": "boolean" }
-      }
-    },
-    "messaging": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["text"],
-      "properties": {
-        "text": { "const": true },
-        "files": { "type": "boolean" },
-        "replies": { "type": "boolean" },
-        "edits": { "type": "boolean" },
-        "forwards": { "type": "boolean" },
-        "delete": { "type": "boolean" },
-        "reactions": { "type": "boolean" },
-        "typing": { "type": "boolean" },
-        "readReceipts": { "type": "boolean" },
-        "block": { "type": "boolean" },
-        "reachability": { "type": "boolean" }
-      }
-    },
-    "calls": {
+    "capabilities": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "voice": { "type": "boolean" },
-        "video": { "type": "boolean" },
-        "mute": { "type": "boolean" },
-        "hold": { "type": "boolean" },
-        "dtmf": { "type": "boolean" },
-        "transfer": { "type": "boolean" },
-        "switchCamera": { "type": "boolean" },
-        "audioDevice": { "type": "boolean" },
-        "dialer": { "type": "boolean" }
-      }
-    },
-    "device": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "camera": { "type": "boolean" },
-        "imagePicker": { "type": "boolean" },
-        "contactPicker": { "type": "boolean" },
-        "qr": { "type": "boolean" },
-        "downloadFile": { "type": "boolean" }
+        "communication": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["sessions", "messaging"],
+          "properties": {
+            "sessions": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["direct"],
+              "properties": {
+                "direct": { "const": true },
+                "groups": { "type": "boolean" },
+                "rename": { "type": "boolean" },
+                "delete": { "type": "boolean" }
+              }
+            },
+            "messaging": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["text"],
+              "properties": {
+                "text": { "const": true },
+                "files": { "type": "boolean" },
+                "replies": { "type": "boolean" },
+                "edits": { "type": "boolean" },
+                "forwards": { "type": "boolean" },
+                "delete": { "type": "boolean" },
+                "reactions": { "type": "boolean" },
+                "typing": { "type": "boolean" },
+                "readReceipts": { "type": "boolean" },
+                "block": { "type": "boolean" },
+                "reachability": { "type": "boolean" }
+              }
+            },
+            "calls": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "voice": { "type": "boolean" },
+                "video": { "type": "boolean" },
+                "mute": { "type": "boolean" },
+                "hold": { "type": "boolean" },
+                "dtmf": { "type": "boolean" },
+                "transfer": { "type": "boolean" },
+                "switchCamera": { "type": "boolean" },
+                "audioDevice": { "type": "boolean" },
+                "dialer": { "type": "boolean" }
+              }
+            }
+          }
+        },
+        "identity": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "switcher": { "type": "boolean" },
+            "pairing": { "type": "boolean" },
+            "qr": { "type": "boolean" }
+          }
+        },
+        "device": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "camera": { "type": "boolean" },
+            "imagePicker": { "type": "boolean" },
+            "contactPicker": { "type": "boolean" },
+            "qr": { "type": "boolean" },
+            "downloadFile": { "type": "boolean" }
+          }
+        },
+        "subscription": {
+          "description": "Declared only. Interpreter must omit this pack until native entitlement methods exist.",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "required": { "type": "boolean" },
+            "proof": { "const": "native" }
+          }
+        },
+        "commerce": {
+          "description": "Declared only. Interpreter must omit this pack until native listing methods exist.",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "listings": { "type": "boolean" },
+            "checkout": { "type": "boolean" }
+          }
+        }
       }
     },
     "theme": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "preset": { "enum": ["arnacon-default"] }
+        "preset": { "enum": ["arnacon-default", "custom"] },
+        "colors": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "accent": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" },
+            "accent2": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" },
+            "bg": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" },
+            "text": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" },
+            "muted": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" },
+            "fill": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" },
+            "danger": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" },
+            "ok": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" }
+          }
+        }
       }
     },
     "warnings": {
