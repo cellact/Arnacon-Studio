@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Arnacon</title>
+  <link rel="stylesheet" href="app.css">
+</head>
+<body>
+<iframe id="screenFrame" title="screen"></iframe>
+<script>
+const controller = window.top.controller;
+function pageParams() {
+  const hash = new URLSearchParams(String(location.hash || '').replace(/^#/, ''));
+  const query = new URLSearchParams(location.search);
+  const get = (k, d) => {
+    const raw = hash.get(k);
+    const q = query.get(k);
+    const v = (raw !== null && raw !== '') ? raw : q;
+    if (v === null || v === undefined || v === 'null' || v === 'undefined' || v === '') {
+      return d === undefined ? '' : d;
+    }
+    return v;
+  };
+  const videoRaw = get('videoCall', false);
+  return {
+    screen: get('screen', 'MAIN'),
+    localId: get('localId', '') || '',
+    identityKind: get('identityKind', 'arnacon'),
+    sessionId: get('sessionId', ''),
+    remoteId: get('remoteId', ''),
+    sessionName: get('sessionName', ''),
+    videoCall: videoRaw === true || videoRaw === 'true',
+    from: get('from', ''),
+    to: get('to', ''),
+    callId: get('callId', '')
+  };
+}
+function requireController() {
+  if (!controller) {
+    document.body.innerHTML = '<p class="banner">This app must run inside the Arnacon host.</p>';
+    throw new Error('missing controller');
+  }
+}
+function navigate(screen, extra) {
+  const payload = { action: 'arnacon-navigate', screen: screen, extra: extra || {} };
+  if (window.parent && window.parent !== window) {
+    window.parent.postMessage(payload, '*');
+  }
+}
+function eventBody(data) {
+  if (data && data.body && typeof data.body === 'object') return data.body;
+  return data || {};
+}
+function eventMessage(data) {
+  const body = eventBody(data);
+  return body.message || body;
+}
+function messageText(msg) {
+  if (!msg) return '';
+  if (typeof msg.content === 'string') return msg.content;
+  return msg.body || msg.text || '';
+}
+function isMine(msg) {
+  if (!msg) return false;
+  if (typeof msg.outgoing === 'boolean') return msg.outgoing;
+  const author = msg.author || '';
+  const local = pageParams().localId || '';
+  return !!local && author === local && author !== 'SYSTEM';
+}
+function sessionPreview(session) {
+  return (session && (session.lastMessageContent || session.lastMessage)) || '';
+}
+function callPeerId(params) {
+  const p = params || pageParams();
+  return p.callId || p.from || p.to || p.remoteId || p.sessionId || '';
+}
+
+const SCREENS = ["MAIN","CHAT","NEW_CHAT","CREATE_GROUP","CALL","RING","INCOMING","PAIRING"];
+const HAS_VIDEO = true;
+function fileFor(screen, extra) {
+  const files = { MAIN: 'mainscreen.html', CHAT: 'chat.html' };
+  files.NEW_CHAT = 'newchat.html';
+  files.CREATE_GROUP = 'creategroup.html';
+  files.RING = 'ringing.html';
+  files.INCOMING = 'incomingcall.html';
+  files.PAIRING = 'pairing.html';
+
+
+  files.CALL = (HAS_VIDEO && extra && extra.videoCall) ? 'videocall.html' : 'voicecall.html';
+  return files[screen] || files.MAIN;
+}
+function buildQuery(screen, extra) {
+  const p = pageParams();
+  const next = new URLSearchParams();
+  next.set('screen', screen);
+  if (p.localId) next.set('localId', p.localId);
+  if (p.identityKind) next.set('identityKind', p.identityKind);
+  const merged = Object.assign({}, extra);
+  for (const key of ['sessionId', 'remoteId', 'sessionName', 'from', 'to', 'callId', 'videoCall']) {
+    const value = merged[key] !== undefined ? merged[key] : p[key];
+    if (value !== undefined && value !== '' && value !== false) next.set(key, String(value));
+  }
+  return next.toString();
+}
+function loadScreen(screen, extra) {
+  const dest = SCREENS.indexOf(screen) >= 0 ? screen : 'MAIN';
+  document.getElementById('screenFrame').src = fileFor(dest, extra) + '?' + buildQuery(dest, extra);
+}
+requireController();
+const bootParams = pageParams();
+let bootScreen = bootParams.screen || 'MAIN';
+if (!bootParams.localId && SCREENS.indexOf('PAIRING') >= 0 && (!bootScreen || bootScreen === 'MAIN')) {
+  bootScreen = 'PAIRING';
+}
+loadScreen(bootScreen, bootParams);
+window.addEventListener('message', function (event) {
+  if (event.data && event.data.action === 'arnacon-navigate') {
+    loadScreen(event.data.screen, event.data.extra || {});
+  }
+});
+
+controller.on('identity-change', function (data) {
+  const body = eventBody(data);
+  const next = pageParams();
+  if (body.localId) next.localId = body.localId;
+  if (body.identityKind) next.identityKind = body.identityKind;
+  const params = new URLSearchParams(location.search);
+  if (next.localId) params.set('localId', next.localId);
+  if (next.identityKind) params.set('identityKind', next.identityKind);
+  history.replaceState({}, '', location.pathname + '?' + params.toString() + location.hash);
+  loadScreen('MAIN', next);
+});
+
+
+controller.on('receiving-call', function (data) {
+  const body = eventBody(data);
+  loadScreen('INCOMING', {
+    from: body.from || body.remoteId || '',
+    callId: body.callId || body.from || '',
+    sessionName: body.sessionName || '',
+    sessionId: body.sessionId || '',
+    videoCall: !!body.videoCall
+  });
+});
+
+
+controller.on('ringing', function (data) {
+  const body = eventBody(data);
+  loadScreen('RING', {
+    to: body.to || body.callId || '',
+    callId: body.callId || body.to || '',
+    sessionId: body.sessionId || '',
+    sessionName: body.sessionName || '',
+    videoCall: !!body.videoCall
+  });
+});
+
+
+controller.on('call-started', function (data) {
+  const body = eventBody(data);
+  loadScreen('CALL', {
+    to: body.to || body.remoteId || body.from || '',
+    callId: body.callId || body.from || body.to || '',
+    sessionId: body.sessionId || '',
+    sessionName: body.sessionName || '',
+    videoCall: !!body.videoCall
+  });
+});
+
+
+controller.on('call-ended', function () { loadScreen('MAIN', pageParams()); });
+
+
+controller.on('error', function () {});
+
+</script>
+</body>
+</html>

@@ -2,7 +2,3 @@ node_modules/
 .vercel
 .env
 .env.*
-output/*/
-!output/.gitkeep
-skin/*
-!skin/README.md

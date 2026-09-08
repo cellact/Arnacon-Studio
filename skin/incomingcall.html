@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Incoming call</title>
+  <link rel="stylesheet" href="app.css">
+</head>
+<body>
+
+<div class="call-stage">
+  <div>
+    <p>Incoming call</p>
+    <h2 id="peer">Caller</h2>
+  </div>
+  <div class="call-actions">
+    <button class="btn danger" id="rejectBtn" type="button">Decline</button>
+    <button class="btn ok" id="acceptBtn" type="button">Accept</button>
+  </div>
+</div>
+
+<script>
+const controller = window.top.controller;
+function pageParams() {
+  const hash = new URLSearchParams(String(location.hash || '').replace(/^#/, ''));
+  const query = new URLSearchParams(location.search);
+  const get = (k, d) => {
+    const raw = hash.get(k);
+    const q = query.get(k);
+    const v = (raw !== null && raw !== '') ? raw : q;
+    if (v === null || v === undefined || v === 'null' || v === 'undefined' || v === '') {
+      return d === undefined ? '' : d;
+    }
+    return v;
+  };
+  const videoRaw = get('videoCall', false);
+  return {
+    screen: get('screen', 'MAIN'),
+    localId: get('localId', '') || '',
+    identityKind: get('identityKind', 'arnacon'),
+    sessionId: get('sessionId', ''),
+    remoteId: get('remoteId', ''),
+    sessionName: get('sessionName', ''),
+    videoCall: videoRaw === true || videoRaw === 'true',
+    from: get('from', ''),
+    to: get('to', ''),
+    callId: get('callId', '')
+  };
+}
+function requireController() {
+  if (!controller) {
+    document.body.innerHTML = '<p class="banner">This app must run inside the Arnacon host.</p>';
+    throw new Error('missing controller');
+  }
+}
+function navigate(screen, extra) {
+  const payload = { action: 'arnacon-navigate', screen: screen, extra: extra || {} };
+  if (window.parent && window.parent !== window) {
+    window.parent.postMessage(payload, '*');
+  }
+}
+function eventBody(data) {
+  if (data && data.body && typeof data.body === 'object') return data.body;
+  return data || {};
+}
+function eventMessage(data) {
+  const body = eventBody(data);
+  return body.message || body;
+}
+function messageText(msg) {
+  if (!msg) return '';
+  if (typeof msg.content === 'string') return msg.content;
+  return msg.body || msg.text || '';
+}
+function isMine(msg) {
+  if (!msg) return false;
+  if (typeof msg.outgoing === 'boolean') return msg.outgoing;
+  const author = msg.author || '';
+  const local = pageParams().localId || '';
+  return !!local && author === local && author !== 'SYSTEM';
+}
+function sessionPreview(session) {
+  return (session && (session.lastMessageContent || session.lastMessage)) || '';
+}
+function callPeerId(params) {
+  const p = params || pageParams();
+  return p.callId || p.from || p.to || p.remoteId || p.sessionId || '';
+}
+
+
+requireController();
+
+function isWhatsApp() { return pageParams().identityKind === 'whatsapp'; }
+if (isWhatsApp()) { navigate('MAIN'); }
+
+
+function hangUp(callId) {
+  const id = callId || callPeerId();
+  const bc = window.top.browserCall;
+  if (bc && typeof bc.close === 'function') bc.close();
+  controller.rejectCall(id);
+}
+function acceptIncoming(callId, videoCall) {
+  const id = callId || callPeerId();
+  const bc = window.top.browserCall;
+  if (bc && typeof bc.accept === 'function') bc.accept(id, { video: !!videoCall });
+  else controller.acceptCall(id);
+}
+function setCallMuted(muted) {
+  const id = callPeerId();
+  controller.setMute(id, !!muted);
+  const bc = window.top.browserCall;
+  if (bc && typeof bc.setMuted === 'function') bc.setMuted(!!muted);
+}
+async function flipCamera() {
+  const bc = window.top.browserCall;
+  if (bc && typeof bc.switchCamera === 'function') {
+    await bc.switchCamera();
+    return;
+  }
+  controller.switchCamera(callPeerId());
+}
+
+const params = pageParams();
+document.getElementById('peer').textContent = params.sessionName || params.from || 'Incoming';
+document.getElementById('acceptBtn').addEventListener('click', function () {
+  acceptIncoming(params.from || params.callId, params.videoCall);
+  navigate('CALL', { to: params.from, callId: params.callId || params.from, sessionId: params.sessionId, sessionName: params.sessionName, videoCall: params.videoCall });
+});
+document.getElementById('rejectBtn').addEventListener('click', function () {
+  hangUp(params.from || params.callId);
+  navigate('MAIN');
+});
+controller.on('call-ended', function () { navigate('MAIN'); });
+controller.on('call-answered-elsewhere', function () { navigate('MAIN'); });
+
+</script>
+</body>
+</html>

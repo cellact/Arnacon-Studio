@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Arnacon</title>
+  <link rel="stylesheet" href="app.css">
+</head>
+<body>
+
+<div class="column">
+  <div class="topbar">
+    <button class="icon-btn" id="backBtn" type="button">Back</button>
+    <h1 id="title">Chat</h1>
+
+<button class="icon-btn" id="blockBtn" type="button">Block</button>
+<button class="icon-btn" id="callBtn" type="button">Call</button>
+<button class="icon-btn" id="videoBtn" type="button">Video</button>
+</div>
+  <div class="messages" id="messages"></div>
+  <div class="composer">
+<button class="icon-btn" id="attachBtn" type="button">+</button>
+<input id="input" type="text" placeholder="Message" autocomplete="off">
+    <button class="btn primary" id="sendBtn" type="button">Send</button>
+  </div>
+</div>
+
+<script>
+const controller = window.top.controller;
+function pageParams() {
+  const hash = new URLSearchParams(String(location.hash || '').replace(/^#/, ''));
+  const query = new URLSearchParams(location.search);
+  const get = (k, d) => {
+    const raw = hash.get(k);
+    const q = query.get(k);
+    const v = (raw !== null && raw !== '') ? raw : q;
+    if (v === null || v === undefined || v === 'null' || v === 'undefined' || v === '') {
+      return d === undefined ? '' : d;
+    }
+    return v;
+  };
+  const videoRaw = get('videoCall', false);
+  return {
+    screen: get('screen', 'MAIN'),
+    localId: get('localId', '') || '',
+    identityKind: get('identityKind', 'arnacon'),
+    sessionId: get('sessionId', ''),
+    remoteId: get('remoteId', ''),
+    sessionName: get('sessionName', ''),
+    videoCall: videoRaw === true || videoRaw === 'true',
+    from: get('from', ''),
+    to: get('to', ''),
+    callId: get('callId', '')
+  };
+}
+function requireController() {
+  if (!controller) {
+    document.body.innerHTML = '<p class="banner">This app must run inside the Arnacon host.</p>';
+    throw new Error('missing controller');
+  }
+}
+function navigate(screen, extra) {
+  const payload = { action: 'arnacon-navigate', screen: screen, extra: extra || {} };
+  if (window.parent && window.parent !== window) {
+    window.parent.postMessage(payload, '*');
+  }
+}
+function eventBody(data) {
+  if (data && data.body && typeof data.body === 'object') return data.body;
+  return data || {};
+}
+function eventMessage(data) {
+  const body = eventBody(data);
+  return body.message || body;
+}
+function messageText(msg) {
+  if (!msg) return '';
+  if (typeof msg.content === 'string') return msg.content;
+  return msg.body || msg.text || '';
+}
+function isMine(msg) {
+  if (!msg) return false;
+  if (typeof msg.outgoing === 'boolean') return msg.outgoing;
+  const author = msg.author || '';
+  const local = pageParams().localId || '';
+  return !!local && author === local && author !== 'SYSTEM';
+}
+function sessionPreview(session) {
+  return (session && (session.lastMessageContent || session.lastMessage)) || '';
+}
+function callPeerId(params) {
+  const p = params || pageParams();
+  return p.callId || p.from || p.to || p.remoteId || p.sessionId || '';
+}
+
+
+requireController();
+const params = pageParams();
+document.getElementById('title').textContent = params.sessionName || params.remoteId || 'Chat';
+let sessionId = params.sessionId;
+const messagesEl = document.getElementById('messages');
+function isWhatsApp() { return params.identityKind === 'whatsapp'; }
+function appendBubble(text, mine) {
+  const div = document.createElement('div');
+  div.className = 'bubble' + (mine ? ' mine' : '');
+  div.textContent = text;
+  messagesEl.appendChild(div);
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+}
+async function ensureSession() {
+  
+  if (!sessionId && params.remoteId) {
+    const resolved = await controller.getSessionId(params.remoteId);
+    if (resolved && resolved.sessionId) sessionId = resolved.sessionId;
+  }
+  
+  
+  if (sessionId && !params.sessionName) {
+    const named = await controller.getSessionName(sessionId);
+    if (named && named.sessionName) document.getElementById('title').textContent = named.sessionName;
+  }
+  
+}
+async function loadHistory() {
+  await ensureSession();
+  if (!sessionId) return;
+  const result = await controller.getMessages(sessionId, 50, null, true);
+  const messages = (result && result.messages) ? result.messages : [];
+  messagesEl.innerHTML = '';
+  messages.forEach(function (msg) {
+    appendBubble(messageText(msg), isMine(msg));
+  });
+  controller.markRead(sessionId);
+  controller.updateSessionTimestamp(sessionId);
+}
+loadHistory();
+document.getElementById('backBtn').addEventListener('click', function () { navigate('MAIN'); });
+async function sendText(text) {
+  await ensureSession();
+  
+  if (!sessionId && params.remoteId) {
+    const created = await controller.createSession(params.remoteId, params.sessionName || params.remoteId);
+    if (created && created.sessionId) sessionId = created.sessionId;
+  }
+  
+  if (!sessionId) return;
+  controller.sendMessage(String(sessionId), text);
+}
+document.getElementById('sendBtn').addEventListener('click', async function () {
+  const input = document.getElementById('input');
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  appendBubble(text, true);
+  await sendText(text);
+});
+document.getElementById('input').addEventListener('keydown', function (event) {
+  if (event.key === 'Enter') document.getElementById('sendBtn').click();
+});
+controller.on('new-message', function (data) {
+  const msg = eventMessage(data);
+  if (!msg) return;
+  if (sessionId && String(msg.sessionId) !== String(sessionId)) return;
+  if (isMine(msg)) return;
+  appendBubble(messageText(msg), false);
+});
+controller.on('message-updated', function () { loadHistory(); });
+controller.on('message-reaction', function () { loadHistory(); });
+
+const input = document.getElementById('input');
+input.addEventListener('input', function () {
+  if (sessionId) controller.sendChatstate(sessionId, 'composing');
+});
+
+
+controller.on('chatstate', function (data) {
+  const body = eventBody(data);
+  if (body.kind === 'composing' || body.state === 'composing') document.getElementById('title').dataset.typing = '1';
+});
+
+function replyTo(id, text) { controller.sendReplyMessage(sessionId || params.remoteId, text, id, !!sessionId); }
+function editMessage(id, text) { controller.sendEditMessage(id, text); }
+function removeMessage(id) { controller.deleteMessage(id); }
+function forwardMessage(id, target) { controller.forwardMessage(id, target); }
+function react(id, emoji) { controller.sendReaction(sessionId, id, emoji || ''); }
+
+if (sessionId) controller.getBlockStatus(sessionId);
+
+document.getElementById('blockBtn').addEventListener('click', function () {
+  if (sessionId) controller.setBlocked(sessionId, true);
+});
+controller.on('block-status', function () {});
+controller.on('block-result', function () {});
+
+controller.fetchBlocklist();
+
+document.getElementById('attachBtn').addEventListener('click', async function () {
+  const picked = await controller.imagePicker();
+  const body = eventBody(picked);
+  const fileId = body.imageId || body.fileId;
+  if (sessionId && fileId) controller.sendFileMessage(sessionId, fileId, body.caption || '');
+});
+
+
+controller.on('image-picker-result', function (data) {
+  const body = eventBody(data);
+  const fileId = body.imageId || body.fileId;
+  if (sessionId && fileId) controller.sendFileMessage(sessionId, fileId, body.caption || '');
+});
+
+function saveFile(messageId, fileId) { controller.downloadFile(messageId, fileId); }
+function renameSession(name) { if (sessionId) controller.setSessionName(sessionId, name); }
+
+document.getElementById('callBtn').addEventListener('click', function () {
+  if (isWhatsApp()) return;
+  if (sessionId) controller.callSession(sessionId);
+  else if (params.remoteId) controller.callRemote(params.remoteId);
+  navigate('RING', { to: params.remoteId, sessionId: sessionId, sessionName: params.sessionName, callId: params.remoteId || sessionId, videoCall: false });
+});
+
+
+document.getElementById('videoBtn').addEventListener('click', function () {
+  if (isWhatsApp()) return;
+  if (sessionId) controller.videoCallSession(sessionId);
+  else if (params.remoteId) controller.videoCallRemote(params.remoteId);
+  navigate('RING', { to: params.remoteId, sessionId: sessionId, sessionName: params.sessionName, callId: params.remoteId || sessionId, videoCall: true });
+});
+
+
+if (isWhatsApp()) {
+  const callBtn = document.getElementById('callBtn');
+  const videoBtn = document.getElementById('videoBtn');
+  if (callBtn) callBtn.style.display = 'none';
+  if (videoBtn) videoBtn.style.display = 'none';
+}
+
+
+</script>
+</body>
+</html>

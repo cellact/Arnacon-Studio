@@ -8,7 +8,7 @@ description: >-
 
 # Arnacon skin
 
-Arnacon is not a SaaS backend. Native owns identity, crypto, storage, signaling, and delivery. Generated or Ploy/Base44 UI may talk **only** to `window.top.controller`.
+Arnacon is not a SaaS backend. Native owns identity, crypto, storage, signaling, and delivery. Ploy/Base44 UI may talk **only** to `window.top.controller`.
 
 ## Do
 

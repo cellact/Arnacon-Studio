@@ -12,20 +12,17 @@ Ploy and Base44 can restyle an Arnacon product. They cannot become Arnacon. Ther
 ## Local flow
 
 ```bash
-npm run seed-skin    # compiled default messenger into skin/
 # restyle skin/ in Ploy, Base44, or by hand
 npm run lint:skin
 npm run host         # http://127.0.0.1:4175/
 ```
-
-Studio (prompt → spec → compiler) stays at http://127.0.0.1:4173/
 
 ## Phone / emulator
 
 Android already has a product URL override (`setProductUrlOverride`). Point it at the host origin:
 
 - Local USB: `http://10.0.2.2:4175/` (emulator) or your machine LAN IP.
-- Deployed: `https://<this-vercel>/app`
+- Deployed: `https://<this-vercel>/` or `https://<this-vercel>/app`
 
 Native injects `#screen=&localId=&identityKind=` onto that URL. The host forwards the hash into `skin/`. `receiveData` lands on the boot frame's `window.controller`, which is the same object as `window.top.controller` inside the skin.
 
@@ -37,7 +34,7 @@ Per-product `htmlUrl` on the installed product is not wired yet. Until it is, ov
 |---|---|
 | `fetch('/api/...')` | `controller.sendMessage` / `getRecentSessions` / … |
 | Login / JWT | Installed product (`localId` from the URL) |
-| Stripe / checkout | Nothing — commerce pack is downscoped |
+| Stripe / checkout | Nothing — commerce has no native methods |
 | Wallet / RPC | Nothing — identity is the product |
 | `localId = 'alice.eth'` | Read `localId` from the hash |
 
@@ -59,4 +56,3 @@ The skin must use `arnacon-controller` payloads:
 | Hang up | `rejectCall(callId)` |
 
 Computer-tab audio/video is `window.top.browserCall` on the host. Skin HTML must not open a WebSocket or `RTCPeerConnection`. Ploy preview (no Arnacon parent) cannot pair, message, or call.
-

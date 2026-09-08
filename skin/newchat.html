@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>New chat</title>
+  <link rel="stylesheet" href="app.css">
+</head>
+<body>
+
+<div class="column">
+  <div class="topbar">
+    <button class="icon-btn" id="backBtn" type="button">Back</button>
+    <h1>New chat</h1>
+  </div>
+  <div class="panel">
+    <select class="field" id="provider"><option value="email">Email address</option><option value="temp">Private identifier</option><option value="ens">ENS name</option><option value="gsm">Phone number</option></select>
+    <input class="field" id="remote" placeholder="e.g. user@example.com">
+    <p class="hint" id="help">Recipient email — used as-is (no hashing).</p>
+    <p class="error" id="error"></p>
+    <div style="display:flex;gap:8px;margin-top:16px;">
+      <button class="icon-btn" id="contactsBtn" type="button">Contacts</button>
+      <button class="btn primary" id="startBtn" type="button">Start chat</button>
+    </div>
+  </div>
+</div>
+<script src="identity.js"></script>
+
+<script>
+const controller = window.top.controller;
+function pageParams() {
+  const hash = new URLSearchParams(String(location.hash || '').replace(/^#/, ''));
+  const query = new URLSearchParams(location.search);
+  const get = (k, d) => {
+    const raw = hash.get(k);
+    const q = query.get(k);
+    const v = (raw !== null && raw !== '') ? raw : q;
+    if (v === null || v === undefined || v === 'null' || v === 'undefined' || v === '') {
+      return d === undefined ? '' : d;
+    }
+    return v;
+  };
+  const videoRaw = get('videoCall', false);
+  return {
+    screen: get('screen', 'MAIN'),
+    localId: get('localId', '') || '',
+    identityKind: get('identityKind', 'arnacon'),
+    sessionId: get('sessionId', ''),
+    remoteId: get('remoteId', ''),
+    sessionName: get('sessionName', ''),
+    videoCall: videoRaw === true || videoRaw === 'true',
+    from: get('from', ''),
+    to: get('to', ''),
+    callId: get('callId', '')
+  };
+}
+function requireController() {
+  if (!controller) {
+    document.body.innerHTML = '<p class="banner">This app must run inside the Arnacon host.</p>';
+    throw new Error('missing controller');
+  }
+}
+function navigate(screen, extra) {
+  const payload = { action: 'arnacon-navigate', screen: screen, extra: extra || {} };
+  if (window.parent && window.parent !== window) {
+    window.parent.postMessage(payload, '*');
+  }
+}
+function eventBody(data) {
+  if (data && data.body && typeof data.body === 'object') return data.body;
+  return data || {};
+}
+function eventMessage(data) {
+  const body = eventBody(data);
+  return body.message || body;
+}
+function messageText(msg) {
+  if (!msg) return '';
+  if (typeof msg.content === 'string') return msg.content;
+  return msg.body || msg.text || '';
+}
+function isMine(msg) {
+  if (!msg) return false;
+  if (typeof msg.outgoing === 'boolean') return msg.outgoing;
+  const author = msg.author || '';
+  const local = pageParams().localId || '';
+  return !!local && author === local && author !== 'SYSTEM';
+}
+function sessionPreview(session) {
+  return (session && (session.lastMessageContent || session.lastMessage)) || '';
+}
+function callPeerId(params) {
+  const p = params || pageParams();
+  return p.callId || p.from || p.to || p.remoteId || p.sessionId || '';
+}
+
+
+requireController();
+const params = pageParams();
+const providerEl = document.getElementById('provider');
+const remote = document.getElementById('remote');
+const help = document.getElementById('help');
+const error = document.getElementById('error');
+const ui = {"email":{"label":"Email address","placeholder":"e.g. user@example.com","help":"Recipient email — used as-is (no hashing).","inputMode":"email"},"temp":{"label":"Private identifier","placeholder":"e.g. matansada","help":"Recipient private name — used as-is (no hashing).","inputMode":"text"},"ens":{"label":"ENS name","placeholder":"e.g. alice.eth","help":"Recipient ENS name — used as-is (no hashing).","inputMode":"text"},"gsm":{"label":"Phone number","placeholder":"e.g. 14155551234","help":"Recipient phone in international format (digits only, no \"+\").","inputMode":"tel"}};
+function currentProvider() { return providerEl.value || 'email'; }
+function refreshHelp() {
+  const cfg = ui[currentProvider()] || {};
+  remote.placeholder = cfg.placeholder || '';
+  remote.inputMode = cfg.inputMode || 'text';
+  help.textContent = cfg.help || '';
+}
+if (providerEl.tagName === 'SELECT') providerEl.addEventListener('change', refreshHelp);
+refreshHelp();
+document.getElementById('backBtn').addEventListener('click', function () { navigate('MAIN'); });
+document.getElementById('startBtn').addEventListener('click', async function () {
+  const provider = currentProvider();
+  const raw = remote.value;
+  const err = validateInput(raw, provider);
+  error.textContent = err || '';
+  if (err) return;
+  const remoteId = canonicalizeRemote(raw, provider);
+  const result = await controller.createSession(remoteId, remoteId);
+  navigate('CHAT', {
+    sessionId: result && result.sessionId,
+    remoteId: (result && result.remoteId) || remoteId,
+    sessionName: (result && result.sessionName) || remoteId
+  });
+});
+
+const contactsBtn = document.getElementById('contactsBtn');
+function syncPicker() {
+  contactsBtn.hidden = params.identityKind !== 'email' && currentProvider() !== 'email';
+}
+syncPicker();
+contactsBtn.addEventListener('click', async function () {
+  const res = await controller.contactPicker(1);
+  const value = (res && res.injectRemoteId) ? String(res.injectRemoteId).trim() : '';
+  if (value) remote.value = value;
+});
+
+controller.on('inject-remote-id', function (data) {
+  const body = eventBody(data);
+  if (body.injectRemoteId) remote.value = String(body.injectRemoteId);
+});
+
+
+
+</script>
+</body>
+</html>

@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Pair phone</title>
+  <link rel="stylesheet" href="app.css">
+</head>
+<body>
+
+<div class="column">
+  <div class="topbar">
+    <button class="icon-btn" id="backBtn" type="button">Back</button>
+    <h1>Pair phone</h1>
+  </div>
+  <p class="banner">The computer tab creates a room on the controller. The phone scans that QR. This page does not open a WebSocket.</p>
+  <div class="panel">
+    <p class="hint" id="status">Idle</p>
+    <p id="uri"></p>
+    <button class="btn primary" id="startBtn" type="button">Start pairing</button>
+    <button class="btn" id="stopBtn" type="button" style="margin-top:8px">Unlink</button>
+    <button class="btn" id="scanBtn" type="button" style="margin-top:8px">Scan QR on this phone</button>
+    <p class="hint" id="qrOut"></p>
+  </div>
+</div>
+
+<script>
+const controller = window.top.controller;
+function pageParams() {
+  const hash = new URLSearchParams(String(location.hash || '').replace(/^#/, ''));
+  const query = new URLSearchParams(location.search);
+  const get = (k, d) => {
+    const raw = hash.get(k);
+    const q = query.get(k);
+    const v = (raw !== null && raw !== '') ? raw : q;
+    if (v === null || v === undefined || v === 'null' || v === 'undefined' || v === '') {
+      return d === undefined ? '' : d;
+    }
+    return v;
+  };
+  const videoRaw = get('videoCall', false);
+  return {
+    screen: get('screen', 'MAIN'),
+    localId: get('localId', '') || '',
+    identityKind: get('identityKind', 'arnacon'),
+    sessionId: get('sessionId', ''),
+    remoteId: get('remoteId', ''),
+    sessionName: get('sessionName', ''),
+    videoCall: videoRaw === true || videoRaw === 'true',
+    from: get('from', ''),
+    to: get('to', ''),
+    callId: get('callId', '')
+  };
+}
+function requireController() {
+  if (!controller) {
+    document.body.innerHTML = '<p class="banner">This app must run inside the Arnacon host.</p>';
+    throw new Error('missing controller');
+  }
+}
+function navigate(screen, extra) {
+  const payload = { action: 'arnacon-navigate', screen: screen, extra: extra || {} };
+  if (window.parent && window.parent !== window) {
+    window.parent.postMessage(payload, '*');
+  }
+}
+function eventBody(data) {
+  if (data && data.body && typeof data.body === 'object') return data.body;
+  return data || {};
+}
+function eventMessage(data) {
+  const body = eventBody(data);
+  return body.message || body;
+}
+function messageText(msg) {
+  if (!msg) return '';
+  if (typeof msg.content === 'string') return msg.content;
+  return msg.body || msg.text || '';
+}
+function isMine(msg) {
+  if (!msg) return false;
+  if (typeof msg.outgoing === 'boolean') return msg.outgoing;
+  const author = msg.author || '';
+  const local = pageParams().localId || '';
+  return !!local && author === local && author !== 'SYSTEM';
+}
+function sessionPreview(session) {
+  return (session && (session.lastMessageContent || session.lastMessage)) || '';
+}
+function callPeerId(params) {
+  const p = params || pageParams();
+  return p.callId || p.from || p.to || p.remoteId || p.sessionId || '';
+}
+
+
+requireController();
+function payload(data) { return eventBody(data); }
+function show(offer) {
+  const status = document.getElementById('status');
+  const uri = document.getElementById('uri');
+  if (!offer) return;
+  status.textContent = offer.status || '';
+  uri.textContent = offer.pairingUri || offer.room || '';
+}
+document.getElementById('backBtn').addEventListener('click', function () { navigate('MAIN'); });
+async function beginPairing() {
+  const offer = await controller.startBrowserPairing();
+  show(offer);
+  document.getElementById('scanBtn').hidden = !(offer && offer.useScanQrCode);
+  return offer;
+}
+document.getElementById('startBtn').addEventListener('click', function () { beginPairing(); });
+document.getElementById('stopBtn').addEventListener('click', function () {
+  show(controller.stopBrowserPairing());
+});
+document.getElementById('scanBtn').addEventListener('click', async function () {
+  const result = await controller.scanQrCode();
+  document.getElementById('qrOut').textContent = (result && result.qrContent) ? result.qrContent : '';
+});
+if (controller.getBrowserPairing) show(controller.getBrowserPairing());
+beginPairing();
+controller.on('pairing-status', function (data) { show(payload(data)); });
+controller.on('pairing-ready', function (data) {
+  const body = payload(data);
+  document.getElementById('status').textContent = 'paired ' + (body.localId || '');
+  navigate('MAIN', { localId: body.localId, identityKind: body.identityKind || 'arnacon' });
+});
+
+</script>
+</body>
+</html>

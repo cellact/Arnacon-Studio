@@ -1,4 +1,4 @@
-/** In-memory controller for studio preview. Not used in generated production apps. */
+/** In-memory controller for `npm run host` when no native bridge is present. */
 
 export function createMockController() {
   const listeners = new Map();

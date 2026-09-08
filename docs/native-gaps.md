@@ -1,21 +1,20 @@
-# Native gaps for generated Arnacon apps
+# Native gaps
 
-Generated HTML may only call methods that already exist on `window.top.controller`. A capability pack that has no native binding is classified from the prompt, omitted from the spec, and recorded as a warning. Do not invent REST, wallets, or proving keys to fill the gap.
+Skins may only call methods that already exist on `window.top.controller`. Do not invent REST, wallets, or proving keys to fill a gap.
 
-## Identity pack (partial)
+## Identity (partial)
 
 Available today:
 
-- Injected `localId` / `identityKind` (native URL or shell)
+- Injected `localId` / `identityKind` (native URL or host pairing)
 - `identity-change` event
 - `scanQrCode` → `{ qrContent }` (phone scans a pairing QR)
 - `startBrowserPairing` / `stopBrowserPairing` / `getBrowserPairing` (computer tab owns the WSS room)
 - Events `pairing-status`, `pairing-ready`
-- PAIRING screen (no generated WebSocket)
 
 The WebSocket to `arnacon-phone-relay` lives on the host controller (`host/browser-pairing.mjs`), matching ArnaconWeb. Native still joins as `role=phone` after scanning `arnacon://browser-relay?room=&relay=`.
 
-Still required on the controller before an identity-switcher app is real:
+Still required on the controller before an identity-switcher UI is real:
 
 | Method | Purpose |
 |---|---|
@@ -23,11 +22,9 @@ Still required on the controller before an identity-switcher app is real:
 | `switchIdentity` | Activate one of those products |
 | `getActiveIdentity` | Current `{ localId, identityKind }` without parsing the URL |
 
-Until those exist, the IDENTITIES screen only displays the injected identity.
+## Subscription (blocked)
 
-## Subscription pack (blocked)
-
-Prompts about paid access, memberships, or ZK gates downscope. Do not generate PAYWALL HTML that pretends to charge.
+Do not generate paywalls.
 
 | Method / event | Purpose |
 |---|---|
@@ -36,11 +33,9 @@ Prompts about paid access, memberships, or ZK gates downscope. Do not generate P
 | `unsubscribe` | End a plan |
 | `entitlement-change` | Push when access changes |
 
-ZK stays inside native. If a spec ever gains this pack, the only legal flag is `subscription.proof: "native"` — never a proving key, circuit, or RPC URL.
+## Commerce (blocked)
 
-## Commerce pack (blocked)
-
-Prompts about shops, listings, or checkout downscope.
+Do not generate shops, listings, or checkout.
 
 | Method | Purpose |
 |---|---|
@@ -49,11 +44,8 @@ Prompts about shops, listings, or checkout downscope.
 | `createListing` | Publish a listing |
 | `buyListing` | Purchase against native settlement |
 
-Do not add these methods to generated apps until native owns the protocol.
-
-## Communication and device packs
+## Communication and device
 
 These already bind to `arnacon-controller` (sessions, messages, calls, camera, contacts, files). See `lib/constants.mjs` for the allowlist.
 
 On the computer tab, after pairing, `sendMessage` / `callSession` ride the same relay WebSocket. Media is `window.top.browserCall` on the host (`host/browser-call.mjs`), matching ArnaconWeb. Hang up with `rejectCall(callId)`. Message rows use `content` / `author`; session previews use `lastMessageContent`.
-

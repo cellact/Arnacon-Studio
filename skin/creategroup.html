@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>New group</title>
+  <link rel="stylesheet" href="app.css">
+</head>
+<body>
+
+<div class="column">
+  <div class="topbar">
+    <button class="icon-btn" id="backBtn" type="button">Back</button>
+    <h1>New group</h1>
+  </div>
+  <div class="panel">
+    <input class="field" id="name" placeholder="Group name">
+    <input class="field" id="description" placeholder="Description" style="margin-top:10px">
+    <input class="field" id="participant" placeholder="Add participant" style="margin-top:10px">
+    <button class="icon-btn" id="addBtn" type="button" style="margin-top:10px">Add</button>
+    <ul class="list" id="people"></ul>
+    <button class="btn primary" id="createBtn" type="button" style="margin-top:16px">Create group</button>
+  </div>
+</div>
+
+<script>
+const controller = window.top.controller;
+function pageParams() {
+  const hash = new URLSearchParams(String(location.hash || '').replace(/^#/, ''));
+  const query = new URLSearchParams(location.search);
+  const get = (k, d) => {
+    const raw = hash.get(k);
+    const q = query.get(k);
+    const v = (raw !== null && raw !== '') ? raw : q;
+    if (v === null || v === undefined || v === 'null' || v === 'undefined' || v === '') {
+      return d === undefined ? '' : d;
+    }
+    return v;
+  };
+  const videoRaw = get('videoCall', false);
+  return {
+    screen: get('screen', 'MAIN'),
+    localId: get('localId', '') || '',
+    identityKind: get('identityKind', 'arnacon'),
+    sessionId: get('sessionId', ''),
+    remoteId: get('remoteId', ''),
+    sessionName: get('sessionName', ''),
+    videoCall: videoRaw === true || videoRaw === 'true',
+    from: get('from', ''),
+    to: get('to', ''),
+    callId: get('callId', '')
+  };
+}
+function requireController() {
+  if (!controller) {
+    document.body.innerHTML = '<p class="banner">This app must run inside the Arnacon host.</p>';
+    throw new Error('missing controller');
+  }
+}
+function navigate(screen, extra) {
+  const payload = { action: 'arnacon-navigate', screen: screen, extra: extra || {} };
+  if (window.parent && window.parent !== window) {
+    window.parent.postMessage(payload, '*');
+  }
+}
+function eventBody(data) {
+  if (data && data.body && typeof data.body === 'object') return data.body;
+  return data || {};
+}
+function eventMessage(data) {
+  const body = eventBody(data);
+  return body.message || body;
+}
+function messageText(msg) {
+  if (!msg) return '';
+  if (typeof msg.content === 'string') return msg.content;
+  return msg.body || msg.text || '';
+}
+function isMine(msg) {
+  if (!msg) return false;
+  if (typeof msg.outgoing === 'boolean') return msg.outgoing;
+  const author = msg.author || '';
+  const local = pageParams().localId || '';
+  return !!local && author === local && author !== 'SYSTEM';
+}
+function sessionPreview(session) {
+  return (session && (session.lastMessageContent || session.lastMessage)) || '';
+}
+function callPeerId(params) {
+  const p = params || pageParams();
+  return p.callId || p.from || p.to || p.remoteId || p.sessionId || '';
+}
+
+
+requireController();
+const people = [];
+const list = document.getElementById('people');
+function render() {
+  list.innerHTML = people.map(function (p) { return '<li class="row"><div>' + p + '</div></li>'; }).join('');
+}
+document.getElementById('backBtn').addEventListener('click', function () { navigate('MAIN'); });
+document.getElementById('addBtn').addEventListener('click', function () {
+  const value = document.getElementById('participant').value.trim();
+  if (!value) return;
+  people.push(value);
+  document.getElementById('participant').value = '';
+  render();
+});
+document.getElementById('createBtn').addEventListener('click', function () {
+  controller.createGroup({
+    name: document.getElementById('name').value.trim(),
+    description: document.getElementById('description').value.trim(),
+    participants: people
+  });
+  navigate('MAIN');
+});
+
+</script>
+</body>
+</html>

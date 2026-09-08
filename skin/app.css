@@ -1,49 +1,15 @@
-/** Presentation tokens only. Changing these must not change compiled methods. */
-
-export const COLOR_KEYS = Object.freeze([
-  'accent',
-  'accent2',
-  'bg',
-  'text',
-  'muted',
-  'fill',
-  'danger',
-  'ok',
-]);
-
-export const DEFAULT_COLORS = Object.freeze({
-  accent: '#7342a0',
-  accent2: '#3634a3',
-  bg: '#ffffff',
-  text: '#111111',
-  muted: '#8e8e93',
-  fill: '#f2f2f7',
-  danger: '#ff3b30',
-  ok: '#34c759',
-});
-
-export const HEX_COLOR = /^#([0-9a-fA-F]{6})$/;
-
-export function isHexColor(value) {
-  return typeof value === 'string' && HEX_COLOR.test(value.trim());
+:root {
+  --accent: #7342a0;
+  --accent-2: #3634a3;
+  --bg: #ffffff;
+  --text: #111111;
+  --muted: #8e8e93;
+  --line: color-mix(in srgb, #111111 12%, transparent);
+  --danger: #ff3b30;
+  --ok: #34c759;
+  --fill: #f2f2f7;
 }
 
-export function resolveColors(theme = {}) {
-  const overlay = theme && typeof theme.colors === 'object' && theme.colors ? theme.colors : {};
-  const colors = { ...DEFAULT_COLORS };
-  for (const key of COLOR_KEYS) {
-    if (isHexColor(overlay[key])) colors[key] = overlay[key].trim();
-  }
-  return colors;
-}
-
-/**
- * App stylesheet from theme tokens. Functionality HTML is unchanged.
- */
-export function cssForTheme(theme = {}) {
-  const c = resolveColors(theme);
-  const custom = theme.preset === 'custom';
-  const dark = custom ? '' : `
 @media (prefers-color-scheme: dark) {
   :root {
     --bg: #171717;
@@ -53,19 +19,7 @@ export function cssForTheme(theme = {}) {
     --fill: #2c2c2e;
   }
 }
-`;
-  return `:root {
-  --accent: ${c.accent};
-  --accent-2: ${c.accent2};
-  --bg: ${c.bg};
-  --text: ${c.text};
-  --muted: ${c.muted};
-  --line: color-mix(in srgb, ${c.text} 12%, transparent);
-  --danger: ${c.danger};
-  --ok: ${c.ok};
-  --fill: ${c.fill};
-}
-${dark}* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text);
   font-family: -apple-system, "SF Pro Text", "Helvetica Neue", sans-serif; }
 iframe { border: 0; width: 100%; height: 100%; }
@@ -96,5 +50,3 @@ iframe { border: 0; width: 100%; height: 100%; }
 .hint { color: var(--muted); font-size: 13px; margin: 8px 0 0; }
 .error { color: var(--danger); font-size: 13px; min-height: 1.2em; }
 select.field { width: 100%; margin-bottom: 10px; }
-`;
-}

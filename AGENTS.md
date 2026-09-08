@@ -14,13 +14,12 @@ This repo hosts an Arnacon product. Native owns identity, crypto, storage, signa
 ## Layout
 
 - `host/index.html` — boot page. Creates `window.top.controller`, then loads `skin/`.
-- `skin/` — Ploy/Base44 (or studio) output. Prefer `app.html`, else `index.html` or `mainscreen.html`.
+- `skin/` — Ploy/Base44 output. Prefer `app.html`, else `index.html` or `mainscreen.html`.
 - Hash routing: `#screen=MAIN&localId=…&identityKind=…&sessionId=…`
 
 ## Commands
 
 ```bash
-npm run seed-skin
 npm run lint:skin
 npm run host
 ```

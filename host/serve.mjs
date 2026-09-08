@@ -2,7 +2,6 @@ import { createReadStream, existsSync, statSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { extname, join, normalize, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { seedSkin } from '../scripts/seed-skin.mjs';
 
 const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const types = {
@@ -16,12 +15,6 @@ const types = {
 };
 
 const port = Number(process.env.PORT || 4175);
-const skinDir = join(root, 'skin');
-
-if (!existsSync(join(skinDir, 'app.html')) && !existsSync(join(skinDir, 'index.html'))) {
-  const seeded = seedSkin();
-  console.log(`Seeded default skin (${seeded.files} files) into ${seeded.dir}`);
-}
 
 const server = createServer((req, res) => {
   const url = new URL(req.url || '/', `http://${req.headers.host}`);

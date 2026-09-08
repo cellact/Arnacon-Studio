@@ -2,6 +2,7 @@
   "framework": null,
   "cleanUrls": true,
   "rewrites": [
+    { "source": "/", "destination": "/host/index.html" },
     { "source": "/app", "destination": "/host/index.html" }
   ],
   "headers": [
@@ -10,12 +11,6 @@
       "headers": [
         { "key": "Content-Type", "value": "text/javascript; charset=utf-8" },
         { "key": "Cache-Control", "value": "no-cache" }
-      ]
-    },
-    {
-      "source": "/index.html",
-      "headers": [
-        { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }
       ]
     },
     {
