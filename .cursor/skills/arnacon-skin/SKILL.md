@@ -13,7 +13,8 @@ Arnacon is not a SaaS backend. Native owns identity, crypto, storage, signaling,
 ## Do
 
 - Edit HTML/CSS/colors in `skin/`.
-- Call existing `arnacon-controller` methods (`sendMessage`, `getRecentSessions`, `callSession`, …).
+- Call existing `arnacon-controller` methods (`sendMessage`, `getRecentSessions`, `callSession`, `scanQrCode`, …).
+- PAIRING / QR pairing is allowed. Computer tab: `startBrowserPairing()` → `{ room, pairingUri, status }`; unlink with `stopBrowserPairing()`; listen `pairing-status` and `pairing-ready`. Phone WebView: `useScanQrCode` then `scanQrCode()`. Do not open a WebSocket in skin HTML.
 - Keep hash params: `screen`, `localId`, `identityKind`, `sessionId`. Never invent `localId`.
 - Run `npm run lint:skin` before finishing.
 

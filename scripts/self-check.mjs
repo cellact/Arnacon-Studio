@@ -6,6 +6,8 @@ import { fileURLToPath } from 'node:url';
 import { lintOutput, sdkBindings } from '../lib/lint-output.mjs';
 import { wrapLegacySpec } from '../lib/packs.mjs';
 import { zipFiles } from '../lib/zip.mjs';
+import { pairingUriFor } from '../host/browser-pairing.mjs';
+import { DEFAULT_SPEC } from '../lib/defaults.mjs';
 import { buildFromPrompt, buildFromSpec } from '../lib/pipeline.mjs';
 import { loadExamples } from './examples.mjs';
 import { lintSkinDir } from './lint-skin.mjs';
@@ -72,6 +74,11 @@ ok(!inboxBuild.compiled.screens.includes('CREATE_GROUP'));
 
 const pairingBuild = buildFromSpec(pairing.spec);
 ok(pairingBuild.compiled.screens.includes('PAIRING'));
+ok(pairingBuild.compiled.methods.includes('startBrowserPairing'));
+ok(pairingBuild.compiled.methods.includes('stopBrowserPairing'));
+ok(pairingBuild.compiled.methods.includes('getBrowserPairing'));
+ok(pairingBuild.compiled.events.includes('pairing-status'));
+ok(!/new\s+WebSocket/.test(pairingBuild.files['pairing.html']));
 ok(!pairingBuild.compiled.screens.includes('CHAT'));
 ok(!pairingBuild.compiled.methods.includes('getRecentSessions'));
 ok(!pairingBuild.spec.capabilities.communication);
@@ -184,6 +191,17 @@ ok(String.fromCharCode(zipped[0], zipped[1], zipped[2], zipped[3]) === 'PK\u0003
 
 ok(!lintOutput({ 'x.html': 'fetch("/api/messages")' }, sdkBindings()).ok);
 ok(lintOutput({ 'x.html': 'controller.sendMessage("1","hi")' }, sdkBindings()).ok);
+ok(pairingUriFor('ABC123').includes('room=ABC123'));
+ok(pairingUriFor('ABC123').startsWith('arnacon://browser-relay?'));
+
+const defaultBuild = buildFromSpec(DEFAULT_SPEC);
+ok(defaultBuild.ok, JSON.stringify(defaultBuild.validation?.errors || defaultBuild.lint?.errors));
+ok(defaultBuild.compiled.screens.includes('PAIRING'));
+ok(defaultBuild.compiled.methods.includes('scanQrCode'));
+ok(defaultBuild.compiled.methods.includes('startBrowserPairing'));
+ok(/startBrowserPairing/.test(defaultBuild.files['pairing.html']));
+ok(!/new\s+WebSocket/.test(defaultBuild.files['pairing.html']));
+ok(!lintOutput({ 'pairing.html': 'new WebSocket("wss://x")' }, sdkBindings()).ok);
 
 const skinTmp = mkdtempSync(join(tmpdir(), 'arnacon-skin-'));
 try {

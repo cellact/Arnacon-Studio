@@ -1,4 +1,5 @@
 import { createMockController } from '../preview/mock-controller.mjs';
+import { installBrowserPairing } from './browser-pairing.mjs';
 
 function pageHash() {
   return String(location.hash || '').replace(/^#/, '');
@@ -35,13 +36,28 @@ async function createController(localId) {
   if (hasNativeBridge()) {
     try {
       const mod = await import('https://cdn.jsdelivr.net/npm/arnacon-controller@1.8.0/dist/index.mjs');
-      return new mod.Controller({
+      const controller = new mod.Controller({
         localId,
         send: (payload) => { nativeSend(payload); },
       });
+      return installBrowserPairing(controller, { native: true });
     } catch (err) {
       console.warn('[arnacon-host] SDK import failed, using mock', err);
     }
+  }
+  try {
+    const mod = await import('https://cdn.jsdelivr.net/npm/arnacon-controller@1.8.0/dist/index.mjs');
+    let pairingSend = () => {};
+    const controller = new mod.Controller({
+      localId,
+      send: (payload) => pairingSend(payload),
+    });
+    return installBrowserPairing(controller, {
+      mock: false,
+      bindSend: (fn) => { pairingSend = fn; },
+    });
+  } catch (err) {
+    console.warn('[arnacon-host] SDK import failed, using mock pairing', err);
   }
   return createMockController();
 }

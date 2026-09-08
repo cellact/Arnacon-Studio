@@ -25,16 +25,24 @@ function walk(dir, acc = {}, prefix = '') {
 }
 
 function bindingsFor(skinDir) {
+  const open = sdkBindings();
   const specPath = join(skinDir, 'spec.json');
-  if (!existsSync(specPath)) return sdkBindings();
+  if (!existsSync(specPath)) return open;
   try {
     const raw = JSON.parse(readFileSync(specPath, 'utf8'));
     const spec = applyIncompatibilities(mergeDefaults(raw));
     const validation = validateSpec(spec);
-    if (!validation.ok) return sdkBindings();
-    return compile(spec);
+    if (!validation.ok) return open;
+    const compiled = compile(spec);
+    return {
+      ...compiled,
+      methods: [...new Set([...open.methods, ...compiled.methods])],
+      events: [...new Set([...open.events, ...compiled.events])],
+      screens: [...new Set([...open.screens, ...compiled.screens])],
+      gates: {},
+    };
   } catch {
-    return sdkBindings();
+    return open;
   }
 }
 

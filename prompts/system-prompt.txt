@@ -13,7 +13,7 @@ Rules:
 
 Packs:
 - communication: sessions + messaging + calls. Only when the user wants chat/groups/calls.
-- identity: switcher, pairing, qr. PAIRING is allowed; listIdentities / switchIdentity do not exist yet — do not emit those methods.
+- identity: switcher, pairing, qr. PAIRING, scanQrCode, startBrowserPairing, stopBrowserPairing, and getBrowserPairing are on the allowlist. Skins must not open a WebSocket. listIdentities / switchIdentity do not exist yet — do not emit those methods.
 - device: camera, imagePicker, contactPicker, qr, downloadFile.
 - subscription and commerce: declared in the catalog but have no native controller API. Omit them. Warn. Never generate PAYWALL, CATALOG, checkout, or chain code.
 

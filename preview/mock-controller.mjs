@@ -100,7 +100,38 @@ export function createMockController() {
     camera() {},
     imagePicker() { emit('image-picker-result', { fileId: 'preview', caption: '' }); },
     async contactPicker() { return { injectRemoteId: 'customer@example.com' }; },
-    scanQrCode() { return { text: '' }; },
+    async scanQrCode() { return { qrContent: 'arnacon://browser-relay?room=PREVW1&relay=wss://arnacon-phone-relay-309305771885.europe-west1.run.app', requestId: 'preview' }; },
+    async startBrowserPairing() {
+      const offer = {
+        room: 'PREVW1',
+        pairingUri: 'arnacon://browser-relay?room=PREVW1&relay=wss://arnacon-phone-relay-309305771885.europe-west1.run.app',
+        relay: 'wss://arnacon-phone-relay-309305771885.europe-west1.run.app',
+        status: 'waiting',
+        useScanQrCode: false,
+      };
+      emit('pairing-status', offer);
+      setTimeout(() => {
+        controller.localId = controller.localId || 'preview.arnacon';
+        emit('pairing-status', { ...offer, status: 'paired', localId: controller.localId, identityKind: 'arnacon' });
+        emit('pairing-ready', { localId: controller.localId, identityKind: 'arnacon', room: offer.room });
+        emit('identity-change', { localId: controller.localId, identityKind: 'arnacon' });
+      }, 40);
+      return offer;
+    },
+    stopBrowserPairing() {
+      const idle = { room: '', pairingUri: '', relay: '', status: 'idle', useScanQrCode: false };
+      emit('pairing-status', idle);
+      return idle;
+    },
+    getBrowserPairing() {
+      return {
+        room: 'PREVW1',
+        pairingUri: 'arnacon://browser-relay?room=PREVW1&relay=wss://arnacon-phone-relay-309305771885.europe-west1.run.app',
+        relay: 'wss://arnacon-phone-relay-309305771885.europe-west1.run.app',
+        status: 'idle',
+        useScanQrCode: false,
+      };
+    },
     downloadFile() {},
     receiveData(raw) {
       try {

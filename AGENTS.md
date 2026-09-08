@@ -8,7 +8,7 @@ This repo hosts an Arnacon product. Native owns identity, crypto, storage, signa
 - Do not invent REST, `fetch('/api/...')`, Express, OAuth, Stripe, databases, wallets, FCM, ICE/TURN, or `localId` literals.
 - Identity is the **installed product**. Do not add login screens that mint accounts.
 - You may change HTML, CSS, and colors freely.
-- You may not add controller methods or events that are not on the SDK allowlist. `npm run lint:skin` is the merge gate.
+- You may not add controller methods or events that are not on the SDK allowlist. `npm run lint:skin` is the merge gate. Browser pairing is `startBrowserPairing` / `stopBrowserPairing` / `getBrowserPairing` plus `scanQrCode` on the phone. Skins must not open a WebSocket.
 - `subscription` and `commerce` have no native methods yet. Do not generate paywalls, checkout, or chain RPC.
 
 ## Layout

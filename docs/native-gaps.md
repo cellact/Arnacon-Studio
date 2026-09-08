@@ -8,8 +8,12 @@ Available today:
 
 - Injected `localId` / `identityKind` (native URL or shell)
 - `identity-change` event
-- `scanQrCode`
-- PAIRING screen (browser-relay stub; no generated WebSocket)
+- `scanQrCode` → `{ qrContent }` (phone scans a pairing QR)
+- `startBrowserPairing` / `stopBrowserPairing` / `getBrowserPairing` (computer tab owns the WSS room)
+- Events `pairing-status`, `pairing-ready`
+- PAIRING screen (no generated WebSocket)
+
+The WebSocket to `arnacon-phone-relay` lives on the host controller (`host/browser-pairing.mjs`), matching ArnaconWeb. Native still joins as `role=phone` after scanning `arnacon://browser-relay?room=&relay=`.
 
 Still required on the controller before an identity-switcher app is real:
 
