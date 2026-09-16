@@ -14,13 +14,28 @@ message storage, signaling, and delivery. Never build a backend for any of it.
 
 **Runtime (required)**
 
-The published site is the web app; it is not framed by an Arnacon page. Before the
-UI renders anything, install the Arnacon runtime and wait for it:
+The published site is the web app; it is not framed by an Arnacon page. Start the
+runtime in the document `<head>`, in a **plain** `<script>` (no `type="module"`,
+no `defer`), so the promise exists before any component mounts:
+
+```html
+<script>
+  window.__arnaconRuntimePromise =
+    import("/host/runtime.mjs").then((m) => m.installArnaconWebApp());
+</script>
+```
+
+Every component then awaits that same promise:
 
 ```js
-import { installArnaconWebApp } from "/host/runtime.mjs";
-const controller = await installArnaconWebApp();
+const controller = await window.__arnaconRuntimePromise;
 ```
+
+Do not bootstrap with `<script type="module">` and a static
+`import { installArnaconWebApp } from "/host/runtime.mjs"`. Module scripts are
+deferred and their body runs only after the whole module graph downloads, so a
+component that hydrates on load reads `window.__arnaconRuntimePromise` before it
+is set. Never throw when it is missing — await it.
 
 Include these four files in the published output at those exact paths:
 `host/runtime.mjs`, `host/browser-pairing.mjs`, `host/browser-call.mjs`,
@@ -30,7 +45,8 @@ instead: `https://<ARNACON_HOST>/host/runtime.mjs`.
 `installArnaconWebApp()` returns the controller and also sets
 `window.top.controller`. In a desktop browser it enables QR pairing with the phone.
 Inside the Arnacon phone app it uses the installed product directly. Your code
-never needs to know which one is active.
+never needs to know which one is active. The runtime also fires an
+`arnacon-ready` event on `window` with `{ controller, browserCall, native }`.
 
 **Identity**
 
