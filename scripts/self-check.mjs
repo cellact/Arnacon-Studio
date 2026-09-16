@@ -21,9 +21,32 @@ ok(!lintOutput({ 'pairing.html': 'new WebSocket("wss://x")' }, sdkBindings()).ok
 ok(pairingUriFor('ABC123').includes('room=ABC123'));
 ok(pairingUriFor('ABC123').startsWith('arnacon://browser-relay?'));
 
-ok(readFileSync(join(root, 'host/boot.mjs'), 'utf8').includes('installBrowserCall'));
+ok(readFileSync(join(root, 'host/boot.mjs'), 'utf8').includes('installArnaconWebApp'));
 ok(readFileSync(join(root, 'host/index.html'), 'utf8').includes('bootHost'));
 ok(readFileSync(join(root, 'AGENTS.md'), 'utf8').includes('window.top.controller'));
+const runtime = readFileSync(join(root, 'host/runtime.mjs'), 'utf8');
+ok(runtime.includes('export async function installArnaconWebApp'));
+ok(runtime.includes('installBrowserPairing'));
+ok(runtime.includes('installBrowserCall'));
+const vercel = JSON.parse(readFileSync(join(root, 'vercel.json'), 'utf8'));
+ok(JSON.stringify(vercel).includes('Access-Control-Allow-Origin'));
+ok(readFileSync(join(root, 'host/serve.mjs'), 'utf8').includes('Access-Control-Allow-Origin'));
+
+const ployPrompt = readFileSync(join(root, 'docs/ploy-prompt.md'), 'utf8');
+for (const needle of [
+  'installArnaconWebApp',
+  'startBrowserPairing',
+  'lastMessageContent',
+  'sendMessage(String(sessionId), text)',
+  'rejectCall',
+  'browserCall',
+]) {
+  ok(ployPrompt.includes(needle), `paste-in prompt must cover ${needle}`);
+}
+for (const skill of ['.agents', '.cursor']) {
+  const text = readFileSync(join(root, skill, 'skills/arnacon-skin/SKILL.md'), 'utf8');
+  ok(text.includes('docs/ploy-prompt.md'), `${skill} skill must point at the paste-in prompt`);
+}
 
 const skinLint = lintSkinDir(join(root, 'skin'));
 ok(skinLint.fileCount > 0, 'skin/ must contain the product HTML');

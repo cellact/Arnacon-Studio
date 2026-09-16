@@ -16,9 +16,18 @@ Open http://127.0.0.1:4175/
 ## Layout
 
 - `host/` — boot page. Creates `window.top.controller`, then loads `skin/`.
+- `host/runtime.mjs` — portable runtime for a Ploy/Base44 site hosted at its own origin.
 - `skin/` — Ploy/Base44 HTML. Prefer `app.html`, else `index.html` or `mainscreen.html`.
 - Hash routing: `#screen=MAIN&localId=…&identityKind=…&sessionId=…`
 
-On a phone, set the product URL override to this origin (or the deployed `/` or `/app` URL).
+A Ploy/Base44 deployment can copy the four runtime modules from `host/` and call
+`installArnaconWebApp()` before mounting its UI. In a browser it pairs through the
+phone relay; in the Arnacon phone WebView it uses the installed product directly.
+
+On a phone, set the product URL override to the published site URL. Per-product
+skin URLs are not yet persisted by native.
+
+If the builder has no Arnacon skill attached, paste
+[docs/ploy-prompt.md](docs/ploy-prompt.md) into it instead.
 
 See [AGENTS.md](AGENTS.md) and [docs/ploy-base44.md](docs/ploy-base44.md).

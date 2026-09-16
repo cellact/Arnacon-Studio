@@ -18,6 +18,26 @@ Arnacon is not a SaaS backend. Native owns identity, crypto, storage, signaling,
 - Keep hash params: `screen`, `localId`, `identityKind`, `sessionId`. Never invent `localId`.
 - Run `npm run lint:skin` before finishing.
 
+## Self-hosted Ploy / Base44 site
+
+The published site does not need an Arnacon parent iframe. Install the portable
+runtime before the UI calls the controller:
+
+```js
+import { installArnaconWebApp } from '/host/runtime.mjs';
+const controller = await installArnaconWebApp();
+```
+
+Ship `host/runtime.mjs`, `host/browser-pairing.mjs`, `host/browser-call.mjs`, and
+`host/ice-config.mjs` at the same relative paths. Alternatively import
+`runtime.mjs` from the deployed Arnacon host; its module responses must allow CORS.
+
+- In a phone WebView, the runtime uses the native bridge and the installed product.
+- In a normal browser, it exposes browser QR pairing and relays controller traffic through the phone.
+- The UI still contains no WebSocket, API, or WebRTC implementation.
+- Render PAIRING when `controller.localId` is empty, then call `startBrowserPairing()`.
+- The Ploy/Base44 editor preview may restrict modules; test the published HTTPS URL.
+
 ## Messages (same contract as ArnaconWeb)
 
 Use SDK field names, not mock aliases.
@@ -41,14 +61,12 @@ Host owns media. Skin never creates a `RTCPeerConnection`.
 - Bind video tags with `browserCall.setVideoElements({ remote, local })`.
 - Hide call UI when `identityKind === 'whatsapp'`.
 
-Opening the Ploy preview origin (not inside the Arnacon host) cannot pair, message, or call.
-
 ## Do not
 
 - Emit `fetch`, `XMLHttpRequest`, `/api/`, Express, OAuth, Stripe, Mongo/Postgres, wallets, Web3 RPC, or Firebase Auth.
 - Create login that mints users. Identity is the installed product.
 - Add `listIdentities` / `switchIdentity` / `subscribe` / checkout. Those native methods do not exist yet.
-- Replace `host/`. The boot page must keep creating `window.top.controller`.
+- Remove the portable runtime unless the site is loaded by the full `host/` boot page.
 
 ## After changing skin/
 
@@ -57,3 +75,8 @@ npm run lint:skin
 ```
 
 If lint fails on an unknown method, remove the call. Do not add a REST fallback.
+
+## Builders without skill support
+
+Give the user `docs/ploy-prompt.md`, the same contract as one paste-in block.
+Change it and this file together.

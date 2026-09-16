@@ -1,66 +1,7 @@
-import { createMockController } from '../preview/mock-controller.mjs';
-import { installBrowserCall } from './browser-call.mjs';
-import { installBrowserPairing } from './browser-pairing.mjs';
+import { installArnaconWebApp } from './runtime.mjs';
 
 function pageHash() {
   return String(location.hash || '').replace(/^#/, '');
-}
-
-function localIdFromLocation() {
-  const hash = new URLSearchParams(pageHash());
-  const query = new URLSearchParams(location.search);
-  return hash.get('localId') || query.get('localId') || '';
-}
-
-function hasNativeBridge() {
-  if (window.AndroidBridge && typeof window.AndroidBridge.processAction === 'function') return true;
-  const wk = window.webkit && window.webkit.messageHandlers;
-  return Boolean(wk && (wk.controller || wk.arnacon || wk.native));
-}
-
-function nativeSend(payload) {
-  const json = typeof payload === 'string' ? payload : JSON.stringify(payload);
-  if (window.AndroidBridge && typeof window.AndroidBridge.processAction === 'function') {
-    window.AndroidBridge.processAction(json);
-    return true;
-  }
-  const wk = window.webkit && window.webkit.messageHandlers;
-  const handler = wk && (wk.controller || wk.arnacon || wk.native);
-  if (handler && typeof handler.postMessage === 'function') {
-    handler.postMessage(json);
-    return true;
-  }
-  return false;
-}
-
-async function createController(localId) {
-  if (hasNativeBridge()) {
-    try {
-      const mod = await import('https://cdn.jsdelivr.net/npm/arnacon-controller@1.8.0/dist/index.mjs');
-      const controller = new mod.Controller({
-        localId,
-        send: (payload) => { nativeSend(payload); },
-      });
-      return installBrowserPairing(controller, { native: true });
-    } catch (err) {
-      console.warn('[arnacon-host] SDK import failed, using mock', err);
-    }
-  }
-  try {
-    const mod = await import('https://cdn.jsdelivr.net/npm/arnacon-controller@1.8.0/dist/index.mjs');
-    let pairingSend = () => {};
-    const controller = new mod.Controller({
-      localId,
-      send: (payload) => pairingSend(payload),
-    });
-    return installBrowserPairing(controller, {
-      mock: false,
-      bindSend: (fn) => { pairingSend = fn; },
-    });
-  } catch (err) {
-    console.warn('[arnacon-host] SDK import failed, using mock pairing', err);
-  }
-  return createMockController();
 }
 
 async function exists(path) {
@@ -103,9 +44,7 @@ function hashFor(screen, extra = {}) {
 }
 
 export async function bootHost() {
-  const localId = localIdFromLocation();
-  const controller = await createController(localId);
-  if (localId) controller.localId = localId;
+  const controller = await installArnaconWebApp();
   if (typeof controller.endCall !== 'function' && typeof controller.rejectCall === 'function') {
     controller.endCall = function endCall(id) {
       const bc = window.top.browserCall;
@@ -113,13 +52,6 @@ export async function bootHost() {
       controller.rejectCall(id);
     };
   }
-  window.controller = controller;
-  window.top.controller = controller;
-  if (!hasNativeBridge() && typeof controller._send === 'function') {
-    window.browserCall = installBrowserCall(controller);
-    window.top.browserCall = window.browserCall;
-  }
-
   const iframe = document.getElementById('skin');
   const entry = await findSkinEntry();
   const usesAppShell = entry.endsWith('/app.html');

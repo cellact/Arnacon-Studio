@@ -26,10 +26,12 @@ const server = createServer((req, res) => {
     res.end('Not found');
     return;
   }
-  res.writeHead(200, {
+  const headers = {
     'Content-Type': types[extname(file)] || 'application/octet-stream',
     'Cache-Control': 'no-cache',
-  });
+  };
+  if (extname(file) === '.mjs') headers['Access-Control-Allow-Origin'] = '*';
+  res.writeHead(200, headers);
   if (req.method === 'HEAD') {
     res.end();
     return;
