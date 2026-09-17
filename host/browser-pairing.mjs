@@ -10,6 +10,8 @@
 export const DEFAULT_RELAY_WSS = 'wss://arnacon-phone-relay-309305771885.europe-west1.run.app';
 
 const ROOM_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+const KEEPALIVE_MS = 15000;
+const KEEPALIVE_TIMEOUT_MS = 60000;
 const TOKEN_KEY = 'arnacon.pairingToken';
 const ROOM_KEY = 'arnacon.pairingRoom';
 
@@ -84,6 +86,10 @@ function attachBrowserRelayPairing(controller, options) {
   let room = read(ROOM_KEY);
   let sendBuffer = [];
   let keepaliveTimer = null;
+  let reconnectTimer = null;
+  let reconnectAttempt = 0;
+  let lastPongAt = 0;
+  let stayConnected = false;
 
   function clearKeepalive() {
     if (keepaliveTimer) {
@@ -92,16 +98,43 @@ function attachBrowserRelayPairing(controller, options) {
     }
   }
 
+  function clearReconnect() {
+    if (reconnectTimer) {
+      clearTimeout(reconnectTimer);
+      reconnectTimer = null;
+    }
+  }
+
   function startKeepalive(ws) {
+    lastPongAt = Date.now();
     clearKeepalive();
     keepaliveTimer = setInterval(() => {
       if (!ws || ws.readyState !== WebSocket.OPEN) return;
+      if (Date.now() - lastPongAt > KEEPALIVE_TIMEOUT_MS) {
+        // Half-open socket: the relay stopped answering. Drop it so onclose reconnects.
+        try {
+          ws.close(4000, 'keepalive-timeout');
+        } catch {
+          /* already closed */
+        }
+        return;
+      }
       try {
         ws.send(JSON.stringify({ action: 'ws-ping', body: {} }));
       } catch {
         /* closed */
       }
-    }, 15000);
+    }, KEEPALIVE_MS);
+  }
+
+  function scheduleReconnect() {
+    if (!stayConnected || !room) return;
+    clearReconnect();
+    reconnectAttempt += 1;
+    const delay = reconnectAttempt === 1
+      ? 400
+      : Math.min(8000, 400 * Math.pow(1.5, reconnectAttempt - 1));
+    reconnectTimer = setTimeout(() => connect(room), delay);
   }
 
   function snapshot() {
@@ -163,6 +196,8 @@ function attachBrowserRelayPairing(controller, options) {
   function connect(nextRoom) {
     room = nextRoom;
     persist(ROOM_KEY, room);
+    stayConnected = true;
+    clearReconnect();
     setStatus('connecting');
     if (mock) {
       setStatus('waiting');
@@ -189,6 +224,7 @@ function attachBrowserRelayPairing(controller, options) {
     socket = ws;
     ws.onopen = () => {
       if (socket !== ws) return;
+      reconnectAttempt = 0;
       setStatus('waiting');
       startKeepalive(ws);
       const token = read(TOKEN_KEY);
@@ -197,6 +233,7 @@ function attachBrowserRelayPairing(controller, options) {
     };
     ws.onmessage = (event) => {
       const raw = typeof event.data === 'string' ? event.data : String(event.data);
+      lastPongAt = Date.now();
       try {
         const data = JSON.parse(raw);
         if (data.action === 'ws-pong') return;
@@ -229,8 +266,11 @@ function attachBrowserRelayPairing(controller, options) {
     };
     ws.onerror = () => setStatus('error', { detail: 'relay connection failed' });
     ws.onclose = () => {
-      if (socket === ws) socket = null;
+      if (socket !== ws) return;
+      socket = null;
+      clearKeepalive();
       if (status !== 'idle') setStatus('disconnected');
+      scheduleReconnect();
     };
     return snapshot();
   }
@@ -241,6 +281,9 @@ function attachBrowserRelayPairing(controller, options) {
   };
 
   controller.stopBrowserPairing = function stopBrowserPairing() {
+    stayConnected = false;
+    clearReconnect();
+    reconnectAttempt = 0;
     persist(TOKEN_KEY, '');
     persist(ROOM_KEY, '');
     room = '';

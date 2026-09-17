@@ -68,6 +68,18 @@ When `controller.localId` is empty, show a pairing screen first:
    read `localId` from that payload and show the main screen.
 5. Offer an unlink button that calls `controller.stopBrowserPairing()`.
 
+The runtime keeps the relay link alive and reconnects on its own, so treat both
+events as repeatable:
+
+- `pairing-status` reports `idle`, `connecting`, `waiting`, `paired`,
+  `disconnected`, or `error`. Only `stopBrowserPairing()` means unpaired.
+  `disconnected` is transient — show a quiet "reconnecting" hint, keep `localId`,
+  and do not send the user back to the pairing screen or call
+  `startBrowserPairing()` again.
+- `pairing-ready` fires again after every reconnect. Navigate to the main screen
+  only when the user is still on the pairing screen; never interrupt an open chat
+  or call.
+
 **Messages**
 
 - List: `await controller.getRecentSessions(20)` → `result.sessions`, each with
