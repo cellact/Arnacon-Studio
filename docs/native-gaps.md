@@ -17,6 +17,8 @@ The WebSocket to `arnacon-phone-relay` lives on the host controller (`host/brows
 
 The paired phone answers `get-identity-list` with every installed product and accepts `set-active-identity`, the same pair of relay actions behind ArnaconWeb's nav rail. `host/identities.mjs` wraps them so a skin sees `listIdentities()` → `{ identities, activeLocalId }`, `switchIdentity(identity)`, `getIdentities()` (last cached answer), and the `identity-list` event. Native replies with either a prebuilt `navMenu` or raw `identityList` rows (`[id, label, localId]`); the module normalizes both and drops section headers.
 
+A switch is confirmed by a fresh identity list carrying the new `activeLocalId` — native sends no `identity-change` of its own, which is why ArnaconWeb reads `body.activeLocalId` instead of listening for the event. The module resolves the `switchIdentity` promise on that payload, updates `controller.localId`, and emits `identity-change` so skins have a single signal. A switch the phone never confirms rejects after 12s rather than hanging.
+
 Inside the phone WebView the native chrome owns the switcher, so these are installed for the computer tab only.
 
 Still missing:

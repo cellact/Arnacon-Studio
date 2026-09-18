@@ -46,7 +46,10 @@ The computer tab can list every installed product, not just the one that paired.
 - `listIdentities()` → `{ identities, activeLocalId }`; entries are
   `{ id, label, localId, kind, selected }`. Rejects after 8s with no phone answer.
 - `getIdentities()` returns the cached answer; `identity-list` fires on every update.
-- `switchIdentity(identity)` activates one, then native emits `identity-change`.
+- `await switchIdentity(identity)` resolves with the new list once the phone
+  confirms and rejects after 12s. Native answers a switch with a fresh identity
+  list, not `identity-change`; the runtime updates `controller.localId` and
+  synthesizes `identity-change` from it. Never block on a bare `identity-change`.
 - Inside the phone WebView the native chrome owns switching; these are browser-only.
 - `getActiveIdentity` still does not exist. Read the hash.
 

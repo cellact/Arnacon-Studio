@@ -90,9 +90,13 @@ the active one — show them all.
 - `controller.getIdentities()` returns the last cached answer with no round trip.
 - `controller.on('identity-list', ...)` fires whenever the phone sends a new list,
   including after a switch. Re-render from it; do not cache your own copy.
-- `controller.switchIdentity(identity)` activates one, passing an entry from the
-  list. The phone then emits `identity-change` with the new `localId` — reload
-  sessions and messages at that point, and update the `localId` hash param.
+- `await controller.switchIdentity(identity)` activates one, passing an entry from
+  the list. It resolves with the new `{ identities, activeLocalId }` once the phone
+  confirms, and rejects after 12 seconds if it never does. Show a spinner while it
+  is pending and an error on rejection — never leave the screen stuck.
+- After it resolves, `controller.localId` is already the new product and an
+  `identity-change` event has fired. Reload sessions and messages, and update the
+  `localId` hash param. Do not wait for any other confirmation, and do not poll.
 - Render the active one with `selected`, not by comparing against a stored value.
 - `listIdentities()` rejects if the phone does not answer within 8 seconds. Catch
   it and show a retry, do not crash the screen.

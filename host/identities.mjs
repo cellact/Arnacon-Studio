@@ -5,6 +5,7 @@
  */
 
 const LIST_TIMEOUT_MS = 8000;
+const SWITCH_TIMEOUT_MS = 12000;
 
 function emitOn(controller, action, body) {
     if (typeof controller.receiveData === 'function') {
@@ -69,18 +70,36 @@ export function installIdentities(controller) {
 
     let latest = { identities: [], activeLocalId: controller.localId || '' };
     const waiting = [];
+    const switching = [];
 
     function resolvePayload(body) {
-        latest = {
-            identities: normalize(body),
-            activeLocalId: body.activeLocalId || controller.localId || '',
-        };
+        const activeLocalId = body.activeLocalId || controller.localId || '';
+        const identityKind = body.identityKind || '';
+        const switched = activeLocalId && activeLocalId !== controller.localId;
+        latest = { identities: normalize(body), activeLocalId, identityKind };
+
         while (waiting.length) {
             const pending = waiting.shift();
             clearTimeout(pending.timer);
             pending.resolve(latest);
         }
+        for (let i = switching.length - 1; i >= 0; i--) {
+            if (switching[i].localId && switching[i].localId !== activeLocalId) continue;
+            const pending = switching.splice(i, 1)[0];
+            clearTimeout(pending.timer);
+            pending.resolve(latest);
+        }
+
         emitOn(controller, 'identity-list', latest);
+        if (switched) {
+            // Native answers a switch with a fresh list, never identity-change.
+            // Synthesize it so skins have one signal for "the product changed".
+            controller.localId = activeLocalId;
+            emitOn(controller, 'identity-change', {
+                localId: activeLocalId,
+                identityKind: identityKind || 'arnacon',
+            });
+        }
         return latest;
     }
 
@@ -108,6 +127,15 @@ export function installIdentities(controller) {
             id: identity.id,
             localId: identity.localId,
             kind: identity.kind,
+        });
+        return new Promise((resolve, reject) => {
+            const pending = { resolve, localId: identity.localId || '' };
+            pending.timer = setTimeout(() => {
+                const index = switching.indexOf(pending);
+                if (index >= 0) switching.splice(index, 1);
+                reject(new Error('The phone did not confirm the identity switch.'));
+            }, SWITCH_TIMEOUT_MS);
+            switching.push(pending);
         });
     };
 
