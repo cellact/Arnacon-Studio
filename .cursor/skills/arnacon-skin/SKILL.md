@@ -28,15 +28,27 @@ import { installArnaconWebApp } from '/host/runtime.mjs';
 const controller = await installArnaconWebApp();
 ```
 
-Ship `host/runtime.mjs`, `host/browser-pairing.mjs`, `host/browser-call.mjs`, and
-`host/ice-config.mjs` at the same relative paths. Alternatively import
-`runtime.mjs` from the deployed Arnacon host; its module responses must allow CORS.
+Ship `host/runtime.mjs`, `host/browser-pairing.mjs`, `host/browser-call.mjs`,
+`host/identities.mjs`, and `host/ice-config.mjs` at the same relative paths.
+Alternatively import `runtime.mjs` from the deployed Arnacon host; its module
+responses must allow CORS.
 
 - In a phone WebView, the runtime uses the native bridge and the installed product.
 - In a normal browser, it exposes browser QR pairing and relays controller traffic through the phone.
 - The UI still contains no WebSocket, API, or WebRTC implementation.
 - Render PAIRING when `controller.localId` is empty, then call `startBrowserPairing()`.
 - The Ploy/Base44 editor preview may restrict modules; test the published HTTPS URL.
+
+## Identities
+
+The computer tab can list every installed product, not just the one that paired.
+
+- `listIdentities()` → `{ identities, activeLocalId }`; entries are
+  `{ id, label, localId, kind, selected }`. Rejects after 8s with no phone answer.
+- `getIdentities()` returns the cached answer; `identity-list` fires on every update.
+- `switchIdentity(identity)` activates one, then native emits `identity-change`.
+- Inside the phone WebView the native chrome owns switching; these are browser-only.
+- `getActiveIdentity` still does not exist. Read the hash.
 
 ## Messages (same contract as ArnaconWeb)
 
@@ -65,7 +77,7 @@ Host owns media. Skin never creates a `RTCPeerConnection`.
 
 - Emit `fetch`, `XMLHttpRequest`, `/api/`, Express, OAuth, Stripe, Mongo/Postgres, wallets, Web3 RPC, or Firebase Auth.
 - Create login that mints users. Identity is the installed product.
-- Add `listIdentities` / `switchIdentity` / `subscribe` / checkout. Those native methods do not exist yet.
+- Add `getActiveIdentity` / `subscribe` / checkout. Those native methods do not exist yet.
 - Remove the portable runtime unless the site is loaded by the full `host/` boot page.
 
 ## After changing skin/

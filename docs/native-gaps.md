@@ -11,15 +11,18 @@ Available today:
 - `scanQrCode` → `{ qrContent }` (phone scans a pairing QR)
 - `startBrowserPairing` / `stopBrowserPairing` / `getBrowserPairing` (computer tab owns the WSS room)
 - Events `pairing-status`, `pairing-ready`
+- `listIdentities` / `switchIdentity` / `getIdentities` on the computer tab
 
 The WebSocket to `arnacon-phone-relay` lives on the host controller (`host/browser-pairing.mjs`), matching ArnaconWeb. Native still joins as `role=phone` after scanning `arnacon://browser-relay?room=&relay=`.
 
-Still required on the controller before an identity-switcher UI is real:
+The paired phone answers `get-identity-list` with every installed product and accepts `set-active-identity`, the same pair of relay actions behind ArnaconWeb's nav rail. `host/identities.mjs` wraps them so a skin sees `listIdentities()` → `{ identities, activeLocalId }`, `switchIdentity(identity)`, `getIdentities()` (last cached answer), and the `identity-list` event. Native replies with either a prebuilt `navMenu` or raw `identityList` rows (`[id, label, localId]`); the module normalizes both and drops section headers.
+
+Inside the phone WebView the native chrome owns the switcher, so these are installed for the computer tab only.
+
+Still missing:
 
 | Method | Purpose |
 |---|---|
-| `listIdentities` | Return installed products the user can switch to |
-| `switchIdentity` | Activate one of those products |
 | `getActiveIdentity` | Current `{ localId, identityKind }` without parsing the URL |
 
 ## Subscription (blocked)

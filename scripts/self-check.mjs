@@ -32,6 +32,14 @@ const vercel = JSON.parse(readFileSync(join(root, 'vercel.json'), 'utf8'));
 ok(JSON.stringify(vercel).includes('Access-Control-Allow-Origin'));
 ok(readFileSync(join(root, 'host/serve.mjs'), 'utf8').includes('Access-Control-Allow-Origin'));
 
+const identities = readFileSync(join(root, 'host/identities.mjs'), 'utf8');
+ok(identities.includes('export function installIdentities'));
+ok(identities.includes('get-identity-list'), 'identity list must use the native relay action');
+ok(identities.includes('set-active-identity'), 'switching must use the native relay action');
+ok(runtime.includes('installIdentities'), 'runtime must install the identity bridge');
+ok(lintOutput({ 'x.html': 'controller.listIdentities()' }, sdkBindings()).ok);
+ok(lintOutput({ 'x.html': "controller.on('identity-list', f)" }, sdkBindings()).ok);
+
 const ployPrompt = readFileSync(join(root, 'docs/ploy-prompt.md'), 'utf8');
 for (const needle of [
   'installArnaconWebApp',
@@ -40,6 +48,9 @@ for (const needle of [
   'sendMessage(String(sessionId), text)',
   'rejectCall',
   'browserCall',
+  'listIdentities',
+  'switchIdentity',
+  'host/identities.mjs',
 ]) {
   ok(ployPrompt.includes(needle), `paste-in prompt must cover ${needle}`);
 }

@@ -1,5 +1,6 @@
 import { installBrowserCall } from './browser-call.mjs';
 import { installBrowserPairing } from './browser-pairing.mjs';
+import { installIdentities } from './identities.mjs';
 
 const CONTROLLER_SDK =
   'https://cdn.jsdelivr.net/npm/arnacon-controller@1.8.0/dist/index.mjs';
@@ -88,6 +89,8 @@ export async function installArnaconWebApp(options = {}) {
   if (!native) {
     browserCall = installBrowserCall(controller);
     expose('browserCall', browserCall);
+    // On the phone the native chrome owns the product switcher.
+    installIdentities(controller);
   }
 
   const detail = { controller, browserCall, native };

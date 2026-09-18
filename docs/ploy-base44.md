@@ -20,6 +20,7 @@ Copy these files into the site's public output, preserving their relative paths:
 - `host/runtime.mjs`
 - `host/browser-pairing.mjs`
 - `host/browser-call.mjs`
+- `host/identities.mjs`
 - `host/ice-config.mjs`
 
 Install the runtime before the UI uses the controller:

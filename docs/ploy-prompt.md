@@ -37,10 +37,10 @@ deferred and their body runs only after the whole module graph downloads, so a
 component that hydrates on load reads `window.__arnaconRuntimePromise` before it
 is set. Never throw when it is missing — await it.
 
-Include these four files in the published output at those exact paths:
+Include these five files in the published output at those exact paths:
 `host/runtime.mjs`, `host/browser-pairing.mjs`, `host/browser-call.mjs`,
-`host/ice-config.mjs`. If you cannot add files, import from the hosted copy
-instead: `https://<ARNACON_HOST>/host/runtime.mjs`.
+`host/identities.mjs`, `host/ice-config.mjs`. If you cannot add files, import from
+the hosted copy instead: `https://<ARNACON_HOST>/host/runtime.mjs`.
 
 `installArnaconWebApp()` returns the controller and also sets
 `window.top.controller`. In a desktop browser it enables QR pairing with the phone.
@@ -80,6 +80,25 @@ events as repeatable:
   only when the user is still on the pairing screen; never interrupt an open chat
   or call.
 
+**Identities (all installed products)**
+
+A user usually owns several Arnacon products. The one that scanned the QR is only
+the active one — show them all.
+
+- `await controller.listIdentities()` → `{ identities, activeLocalId }`. Each entry
+  is `{ id, label, localId, kind, selected }`. Call it after `pairing-ready`.
+- `controller.getIdentities()` returns the last cached answer with no round trip.
+- `controller.on('identity-list', ...)` fires whenever the phone sends a new list,
+  including after a switch. Re-render from it; do not cache your own copy.
+- `controller.switchIdentity(identity)` activates one, passing an entry from the
+  list. The phone then emits `identity-change` with the new `localId` — reload
+  sessions and messages at that point, and update the `localId` hash param.
+- Render the active one with `selected`, not by comparing against a stored value.
+- `listIdentities()` rejects if the phone does not answer within 8 seconds. Catch
+  it and show a retry, do not crash the screen.
+- Do not invent products, prices, or a purchase flow. The list is whatever native
+  reports.
+
 **Messages**
 
 - List: `await controller.getRecentSessions(20)` → `result.sessions`, each with
@@ -117,9 +136,9 @@ events as repeatable:
 
 **Screens**
 
-Conversation list, chat, new chat, new group, pairing, ringing, incoming call,
-voice call, video call. Styling, layout, framework, and navigation are entirely
-your choice.
+Conversation list, chat, new chat, new group, pairing, identities, ringing,
+incoming call, voice call, video call. Styling, layout, framework, and navigation
+are entirely your choice.
 
 **Never do these**
 
@@ -129,8 +148,8 @@ your choice.
 - No Stripe, checkout, paywalls, or subscriptions.
 - No wallets, Web3 RPC, or chain calls.
 - No `new WebSocket(...)` and no `new RTCPeerConnection(...)`. The runtime owns both.
-- No `listIdentities`, `switchIdentity`, `subscribe`, or any controller method not
-  listed above. They do not exist.
+- No `subscribe`, `getEntitlement`, `getActiveIdentity`, or any controller method
+  not listed above. They do not exist.
 - No hard-coded `localId` value.
 
 If a feature would need any of the above, leave it out and say so instead of
