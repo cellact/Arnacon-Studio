@@ -16,6 +16,7 @@
   <p class="banner">The computer tab creates a room on the controller. The phone scans that QR. This page does not open a WebSocket.</p>
   <div class="panel">
     <p class="hint" id="status">Idle</p>
+    <canvas id="qr" hidden></canvas>
     <p id="uri"></p>
     <button class="btn primary" id="startBtn" type="button">Start pairing</button>
     <button class="btn" id="stopBtn" type="button" style="margin-top:8px">Unlink</button>
@@ -95,12 +96,55 @@ function callPeerId(params) {
 
 requireController();
 function payload(data) { return eventBody(data); }
+
+const QR_DISPLAY_PX = 280;
+let encodeQr = null;
+let drawnUri = '';
+
+async function drawQr(pairingUri) {
+  const canvas = document.getElementById('qr');
+  if (!canvas) return;
+  if (!pairingUri) {
+    canvas.hidden = true;
+    drawnUri = '';
+    return;
+  }
+  if (pairingUri === drawnUri) return;
+  if (!encodeQr) ({ encode: encodeQr } = await import('./vendor/uqr.mjs'));
+  let encoded;
+  try {
+    encoded = encodeQr(pairingUri, { ecc: 'H', border: 2 });
+  } catch (err) {
+    encoded = encodeQr(pairingUri, { ecc: 'M', border: 2 });
+  }
+  const { data, size } = encoded;
+  const scale = Math.max(2, Math.ceil(QR_DISPLAY_PX / size));
+  const px = size * scale;
+  canvas.width = px;
+  canvas.height = px;
+  canvas.style.width = QR_DISPLAY_PX + 'px';
+  canvas.style.height = QR_DISPLAY_PX + 'px';
+  const ctx = canvas.getContext('2d');
+  ctx.imageSmoothingEnabled = false;
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, px, px);
+  ctx.fillStyle = '#1C1B1F';
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      if (data[y][x]) ctx.fillRect(x * scale, y * scale, scale, scale);
+    }
+  }
+  canvas.hidden = false;
+  drawnUri = pairingUri;
+}
+
 function show(offer) {
   const status = document.getElementById('status');
   const uri = document.getElementById('uri');
   if (!offer) return;
   status.textContent = offer.status || '';
   uri.textContent = offer.pairingUri || offer.room || '';
+  drawQr(offer.pairingUri || '');
 }
 document.getElementById('backBtn').addEventListener('click', function () { navigate('MAIN'); });
 async function beginPairing() {

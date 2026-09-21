@@ -7,7 +7,9 @@
  * Phone WebView: startBrowserPairing() returns useScanQrCode; skin calls scanQrCode().
  */
 
-export const DEFAULT_RELAY_WSS = 'wss://arnacon-phone-relay-309305771885.europe-west1.run.app';
+// The proxy pins a room to one backend relay and is the only host the phone
+// accepts in a pairing QR. Talking to a backend directly makes scans a no-op.
+export const DEFAULT_RELAY_WSS = 'wss://arnacon-phone-relay-proxy-zmu4vmardq-ew.a.run.app';
 
 const ROOM_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const KEEPALIVE_MS = 15000;
@@ -265,7 +267,7 @@ function attachBrowserRelayPairing(controller, options) {
       }
     };
     ws.onerror = () => setStatus('error', { detail: 'relay connection failed' });
-    ws.onclose = () => {
+    ws.onclose = (event) => {
       if (socket !== ws) return;
       socket = null;
       clearKeepalive();
