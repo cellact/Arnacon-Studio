@@ -1,0 +1,12 @@
+.agents/**
+.cursor/**
+.vscode/**
+docs/**
+lib/**
+scripts/**
+skin/*.html
+skin/*.css
+.gitignore
+AGENTS.md
+vercel.json
+*.vsix

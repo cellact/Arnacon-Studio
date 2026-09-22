@@ -1,11 +1,53 @@
 {
   "name": "arnacon-studio",
+  "displayName": "Arnacon",
+  "description": "Use Arnacon messaging from a Cursor sidebar.",
+  "version": "0.1.0",
+  "publisher": "arnacon",
   "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cellact/Arnacon-Studio.git"
+  },
   "type": "module",
+  "main": "./extension/extension.cjs",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "extensionKind": [
+    "ui"
+  ],
+  "categories": [
+    "Other"
+  ],
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "arnacon",
+          "title": "Arnacon",
+          "icon": "extension/arnacon.svg"
+        }
+      ]
+    },
+    "views": {
+      "arnacon": [
+        {
+          "id": "arnacon.sidebar",
+          "name": "Messages",
+          "type": "webview"
+        }
+      ]
+    }
+  },
   "scripts": {
     "check": "node scripts/self-check.mjs",
     "dev": "node host/serve.mjs",
     "host": "node host/serve.mjs",
-    "lint:skin": "node scripts/lint-skin.mjs"
+    "lint:skin": "node scripts/lint-skin.mjs",
+    "package:extension": "vsce package --no-dependencies"
+  },
+  "devDependencies": {
+    "@vscode/vsce": "^4.0.0"
   }
 }

@@ -40,6 +40,27 @@ ok(runtime.includes('installIdentities'), 'runtime must install the identity bri
 ok(lintOutput({ 'x.html': 'controller.listIdentities()' }, sdkBindings()).ok);
 ok(lintOutput({ 'x.html': "controller.on('identity-list', f)" }, sdkBindings()).ok);
 
+const packageJson = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
+ok(packageJson.main === './extension/extension.cjs');
+ok(packageJson.contributes?.views?.arnacon?.some((view) => view.id === 'arnacon.sidebar'));
+const extension = readFileSync(join(root, 'extension/extension.cjs'), 'utf8');
+ok(extension.includes('registerWebviewViewProvider'));
+ok(extension.includes('Content-Security-Policy'));
+ok(extension.includes('retainContextWhenHidden'));
+const extensionWebview = readFileSync(join(root, 'extension/webview.mjs'), 'utf8');
+ok(extensionWebview.includes('installArnaconWebApp'));
+ok(extensionWebview.includes('controller.startBrowserPairing()'));
+ok(extensionWebview.includes('controller.listIdentities()'));
+ok(extensionWebview.includes('controller.switchIdentity(identity)'));
+ok(extensionWebview.includes('controller.sendMessage(String(session.sessionId), text)'));
+ok(extensionWebview.includes('controller.callSession(session.sessionId)'));
+ok(extensionWebview.includes('controller.rejectCall(id)'), 'hang up must use rejectCall');
+ok(extensionWebview.includes("browserCall.accept(id, { video: false })"), 'sidebar calls are audio only');
+ok(!/videoCall(Session|Remote)/.test(extensionWebview), 'sidebar must not place video calls');
+ok(!/getUserMedia\(\{\s*audio: true,\s*video/.test(extensionWebview), 'sidebar must not request a camera');
+ok(extensionWebview.includes("identityKind !== 'whatsapp'"), 'WhatsApp identities omit calls');
+ok(extension.includes("webrtc 'allow'"), 'CSP must permit WebRTC for audio calls');
+
 const ployPrompt = readFileSync(join(root, 'docs/ploy-prompt.md'), 'utf8');
 for (const needle of [
   'installArnaconWebApp',

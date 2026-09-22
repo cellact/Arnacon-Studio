@@ -31,3 +31,22 @@ If the builder has no Arnacon skill attached, paste
 [docs/ploy-prompt.md](docs/ploy-prompt.md) into it instead.
 
 See [AGENTS.md](AGENTS.md) and [docs/ploy-base44.md](docs/ploy-base44.md).
+
+## Cursor extension
+
+The Cursor extension is an additional Arnacon product surface; it does not
+replace or modify the Ploy skin above. It shares the browser pairing runtime,
+then provides its own sidebar UI for pairing, installed-product switching,
+conversation history, text messages, and audio calls. Video is not wired into
+the sidebar; media still lives on the host (`window.browserCall`).
+
+Build the installable extension:
+
+```bash
+npm install
+npm run package:extension
+```
+
+Install the generated `arnacon-studio-0.1.0.vsix` from Cursor's
+**Extensions: Install from VSIX…** command. For development, run the
+**Run Arnacon Extension** launch configuration.
