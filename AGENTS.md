@@ -29,4 +29,4 @@ npm run host
 
 Open http://127.0.0.1:4175/
 
-Copy `.agents/skills/arnacon-skin/SKILL.md` into the Ploy skill folder if Code Sync does not pick up this repo's skills automatically. Builders with no skill support take the paste-in prompt in [docs/ploy-prompt.md](docs/ploy-prompt.md) instead; keep the two in sync.
+Copy `.agents/skills/arnacon-skin/SKILL.md` into the Ploy skill folder if Code Sync does not pick up this repo's skills automatically. Builders with no skill support take the paste-in prompt in [docs/ploy-prompt.md](docs/ploy-prompt.md) instead; keep the two in sync. Plain-language ideas go through [docs/user-prompt.md](docs/user-prompt.md) (rewrite recipe: [docs/translate.md](docs/translate.md)); do not dilute the Ploy contract.

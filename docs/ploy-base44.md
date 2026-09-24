@@ -8,7 +8,7 @@ Ploy and Base44 can restyle an Arnacon product. They cannot become Arnacon. Ther
 2. **Skin folder** (`skin/`) — drop Ploy Code Sync / Base44 export here. The boot iframe loads `app.html`, else `index.html`, else `mainscreen.html`.
 3. **Lint** (`npm run lint:skin`) — merge gate. Forbidden: `fetch`, `/api/`, Express, OAuth, wallets. Allowed: `controller.*` methods on the SDK allowlist.
 4. **Skills** — [AGENTS.md](../AGENTS.md) and `.agents/skills/arnacon-skin/SKILL.md`. Point Ploy at this repo (or copy the skill into the ployspace repo).
-5. **Paste-in prompt** — [ploy-prompt.md](ploy-prompt.md). The same contract as one instruction block, for a builder with no skill attached.
+5. **Paste-in prompt** — [ploy-prompt.md](ploy-prompt.md). The same contract as one instruction block, for a builder with no skill attached. Plain-language ideas: [user-prompt.md](user-prompt.md) (recipe: [translate.md](translate.md)).
 
 ## Host the web app on Ploy or Base44
 

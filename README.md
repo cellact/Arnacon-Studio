@@ -28,7 +28,10 @@ On a phone, set the product URL override to the published site URL. Per-product
 skin URLs are not yet persisted by native.
 
 If the builder has no Arnacon skill attached, paste
-[docs/ploy-prompt.md](docs/ploy-prompt.md) into it instead.
+[docs/ploy-prompt.md](docs/ploy-prompt.md) into it instead. For a
+plain-language product idea, paste [docs/user-prompt.md](docs/user-prompt.md)
+and fill only the USER IDEA slot; the rewrite recipe is
+[docs/translate.md](docs/translate.md).
 
 See [AGENTS.md](AGENTS.md) and [docs/ploy-base44.md](docs/ploy-base44.md).
 
@@ -37,8 +40,12 @@ See [AGENTS.md](AGENTS.md) and [docs/ploy-base44.md](docs/ploy-base44.md).
 The Cursor extension is an additional Arnacon product surface; it does not
 replace or modify the Ploy skin above. It shares the browser pairing runtime,
 then provides its own sidebar UI for pairing, installed-product switching,
-conversation history, text messages, and audio calls. Video is not wired into
-the sidebar; media still lives on the host (`window.browserCall`).
+conversation history, and text messages.
+
+Calls do not run in the sidebar. Cursor webviews are denied microphone access by
+the iframe permissions policy, so **Call** serves the host page over loopback and
+opens it in your browser, where media works as usual. That page is a separate
+origin, so it pairs with the phone on its own.
 
 Build the installable extension:
 

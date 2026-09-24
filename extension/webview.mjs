@@ -1,15 +1,13 @@
 import { installArnaconWebApp } from '../host/runtime.mjs';
 
+const ide = acquireVsCodeApi();
 const app = document.getElementById('app');
 let controller;
-let browserCall = null;
 let identityKind = 'arnacon';
 let currentView = 'pairing';
 let currentSession = null;
 let encodeQr = null;
-// Audio only: the sidebar never requests a camera or places a video call.
 let call = null;
-let callMuted = false;
 
 function eventBody(data) {
   return data && data.body && typeof data.body === 'object' ? data.body : (data || {});
@@ -82,95 +80,46 @@ function renderCallBar() {
   const peer = document.createElement('strong');
   peer.textContent = callPeerLabel();
   const state = document.createElement('span');
-  state.id = 'callstate';
-  state.textContent = {
-    incoming: 'Incoming call',
-    outgoing: 'Calling…',
-    active: 'Connected',
-  }[call.state] || '';
+  state.textContent = call.note || (call.state === 'incoming' ? 'Incoming call' : '');
   const details = document.createElement('div');
   details.append(peer, state);
 
   const actions = document.createElement('div');
   actions.className = 'actions';
-  if (call.state === 'incoming') {
-    actions.append(
-      button('Accept', () => acceptCall(), 'primary'),
-      button('Decline', () => hangUp(), 'danger'),
-    );
-  } else {
-    actions.append(
-      button(callMuted ? 'Unmute' : 'Mute', () => toggleMute()),
-      button('Hang up', () => hangUp(), 'danger'),
-    );
-  }
+  actions.append(button('Open in browser', () => openCall(call), 'primary'));
+  if (call.state === 'incoming') actions.append(button('Decline', () => decline(), 'danger'));
+  else actions.append(button('Dismiss', () => setCall(null)));
   bar.append(details, actions);
 }
 
 function setCall(next) {
   call = next;
-  if (!next) callMuted = false;
   renderCallBar();
-}
-
-function callError(message) {
-  const state = document.getElementById('callstate');
-  if (state) state.textContent = message;
 }
 
 /**
- * Fail before signaling when the webview cannot reach a microphone, so the
- * phone is never left ringing an unanswerable leg.
+ * Cursor webviews are denied microphone access, so the call leg runs on the
+ * host page in a real browser. That page pairs with the phone separately.
  */
-async function ensureMicrophone() {
-  if (!navigator.mediaDevices?.getUserMedia) {
-    throw new Error('this webview has no microphone access');
-  }
-  const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-  stream.getTracks().forEach((track) => track.stop());
-}
-
-async function startCall(session) {
-  setCall({
-    callId: session.sessionId,
-    peerName: session.sessionName || session.remoteId || '',
-    state: 'outgoing',
+function openCall(target) {
+  ide.postMessage({
+    type: 'open-call',
+    sessionId: target.sessionId || '',
+    sessionName: target.peerName || '',
   });
-  try {
-    await ensureMicrophone();
-    controller.callSession(session.sessionId);
-  } catch (error) {
-    callError(`Microphone unavailable: ${error.message}`);
-  }
+  setCall({ ...target, state: 'handoff', note: 'Opening in your browser…' });
 }
 
-async function acceptCall() {
-  const id = call?.callId;
-  if (!id) return;
-  try {
-    await ensureMicrophone();
-  } catch (error) {
-    callError(`Microphone unavailable: ${error.message}`);
-    return;
-  }
-  if (!call) return;
-  if (browserCall) browserCall.accept(id, { video: false });
-  else controller.acceptCall(id);
-  setCall({ ...call, state: 'active' });
+function startCall(session) {
+  openCall({
+    sessionId: session.sessionId,
+    peerName: session.sessionName || session.remoteId || '',
+  });
 }
 
-function hangUp() {
-  const id = call?.callId;
-  if (browserCall) browserCall.close();
-  if (id) controller.rejectCall(id);
+function decline() {
+  if (call?.callId) controller.rejectCall(call.callId);
   setCall(null);
-}
-
-function toggleMute() {
-  callMuted = !callMuted;
-  if (call?.callId) controller.setMute(call.callId, callMuted);
-  if (browserCall) browserCall.setMuted(callMuted);
-  renderCallBar();
 }
 
 function content() {
@@ -366,7 +315,6 @@ async function renderIdentities() {
 
 try {
   controller = await installArnaconWebApp();
-  browserCall = window.browserCall || null;
   renderShell();
   controller.on('pairing-status', (data) => {
     if (currentView !== 'pairing') return;
@@ -384,35 +332,13 @@ try {
 
   controller.on('receiving-call', (data) => {
     const body = eventBody(data);
-    if (!canCall() || body.videoCall) return;
+    if (!canCall()) return;
     setCall({
       callId: body.callId || body.from || '',
+      sessionId: body.sessionId || '',
       peerName: body.sessionName || body.from || '',
       state: 'incoming',
     });
-  });
-  controller.on('ringing', (data) => {
-    const body = eventBody(data);
-    if (!call) return;
-    setCall({ ...call, callId: body.callId || body.to || call.callId, state: 'outgoing' });
-  });
-  controller.on('call-started', (data) => {
-    const body = eventBody(data);
-    setCall({
-      callId: body.callId || body.from || body.to || call?.callId || '',
-      peerName: body.sessionName || call?.peerName || '',
-      state: 'active',
-    });
-  });
-  controller.on('call-connected', () => {
-    if (call) setCall({ ...call, state: 'active' });
-  });
-  controller.on('mute-state', (data) => {
-    const body = eventBody(data);
-    if (typeof body.mute === 'boolean') {
-      callMuted = body.mute;
-      renderCallBar();
-    }
   });
   controller.on('call-ended', () => setCall(null));
   controller.on('call-answered-elsewhere', () => setCall(null));

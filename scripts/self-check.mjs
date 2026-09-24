@@ -53,13 +53,14 @@ ok(extensionWebview.includes('controller.startBrowserPairing()'));
 ok(extensionWebview.includes('controller.listIdentities()'));
 ok(extensionWebview.includes('controller.switchIdentity(identity)'));
 ok(extensionWebview.includes('controller.sendMessage(String(session.sessionId), text)'));
-ok(extensionWebview.includes('controller.callSession(session.sessionId)'));
-ok(extensionWebview.includes('controller.rejectCall(id)'), 'hang up must use rejectCall');
-ok(extensionWebview.includes("browserCall.accept(id, { video: false })"), 'sidebar calls are audio only');
-ok(!/videoCall(Session|Remote)/.test(extensionWebview), 'sidebar must not place video calls');
-ok(!/getUserMedia\(\{\s*audio: true,\s*video/.test(extensionWebview), 'sidebar must not request a camera');
 ok(extensionWebview.includes("identityKind !== 'whatsapp'"), 'WhatsApp identities omit calls');
-ok(extension.includes("webrtc 'allow'"), 'CSP must permit WebRTC for audio calls');
+// Cursor webviews are denied microphone access, so calls hand off to the host page.
+ok(!/getUserMedia/.test(extensionWebview), 'the sidebar must not request media it cannot get');
+ok(extensionWebview.includes("type: 'open-call'"), 'calls must hand off to the extension host');
+ok(extensionWebview.includes('controller.rejectCall(call.callId)'), 'decline must use rejectCall');
+ok(extension.includes("message?.type !== 'open-call'"), 'the host must handle the call handoff');
+ok(extension.includes('openExternal'), 'the call page must open outside the webview');
+ok(extension.includes("server.listen(0, '127.0.0.1'"), 'the call page needs a loopback secure context');
 
 const ployPrompt = readFileSync(join(root, 'docs/ploy-prompt.md'), 'utf8');
 for (const needle of [

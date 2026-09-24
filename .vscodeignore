@@ -4,8 +4,6 @@
 docs/**
 lib/**
 scripts/**
-skin/*.html
-skin/*.css
 .gitignore
 AGENTS.md
 vercel.json

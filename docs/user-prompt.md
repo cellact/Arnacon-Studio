@@ -1,17 +1,59 @@
-# Prompt to paste into Ploy or Base44
+# Prompt to paste into Ploy or Base44 (plain-language idea)
 
-Use this when the builder has no Arnacon skill attached. It is the same contract as
-[`.agents/skills/arnacon-skin/SKILL.md`](../.agents/skills/arnacon-skin/SKILL.md),
-written as a single instruction block.
+The user writes only the **USER IDEA** slot at the bottom, in everyday language.
+They do not need to know Arnacon, `controller`, or pairing.
 
-For an idea in everyday language, paste [user-prompt.md](user-prompt.md) instead
-(that wrapper translates first, then uses this contract). The rewrite recipe is
-[translate.md](translate.md). Do not replace this file with a casual prompt.
+This wrapper **translates first**, then **builds** with the same contract as
+[ploy-prompt.md](ploy-prompt.md). Do not replace that contract with a vague
+"build whatever they asked."
 
 Replace `<ARNACON_HOST>` with the deployed Arnacon host origin before pasting, or
 delete that option if you copy the runtime files into the project.
 
+The recipe behind the translator is [translate.md](translate.md).
+
 ---
+
+You will receive an app idea in everyday language. Do not ask the user to be
+technical. Do not build a backend. The published site is theirs (Ploy, Base44,
+Vercel, static files — their origin). Arnacon is identity and messaging only. It
+does not host their HTML, store game state, or run an API for this product.
+
+## Step 1 — Rewrite (do this before any UI code)
+
+Read **USER IDEA**. List every feature. Tag each as:
+
+- **UI** — ordinary HTML/CSS/JS on their page (game, layout, score, menus). No
+  controller calls.
+- **Capability** — identity, pairing, sessions, messages, calls, camera,
+  contacts. Use only the controller methods in the build contract below.
+- **Drop** — login/JWT/OAuth, `fetch` / `/api/`, databases, Stripe, wallets,
+  custom WebSocket or WebRTC, paywalls, shops, cloud sync of app data. Leave
+  these out and say so in one sentence each. The user's wording never overrides
+  this list. If they say "login", map it to the installed product and pairing;
+  do not ask them to rephrase.
+
+Pairing only on the path that needs identity (`localId` empty), not as a fake
+login wall in front of a game or other UI.
+
+Output a short rewritten brief (builder terms, not user terms): screens, what is
+local UI, what uses messaging, what was dropped, and that the five `host/`
+runtime files ship with their site (or are imported from
+`https://<ARNACON_HOST>/host/runtime.mjs`).
+
+Example of a USER IDEA and the brief you should produce:
+
+> A simple Flappy Bird game. Sometimes you collect a gem. A gem lets you send a
+> message or open your inbox.
+
+Rewritten brief: screens `GAME`, `GAME_OVER`, `PAIRING` (only when they try
+inbox/send with empty `localId`), `INBOX`, `CHAT`. Bird, pipes, score, gems are
+in-page state. Gems are a local counter, not an entitlement or `/api/gems`.
+Inbox and send use `getRecentSessions` / `getMessages` / `sendMessage`. Game
+loop never calls the controller. No player accounts, no score server, no gem
+shop. Publish on their origin.
+
+## Step 2 — Build that brief with this contract
 
 Build an Arnacon web app. You own the UI only. Arnacon owns identity, encryption,
 message storage, signaling, and delivery. Never build a backend for any of it.
@@ -62,7 +104,9 @@ you navigate.
 
 **Pairing**
 
-When `controller.localId` is empty, show a pairing screen first:
+When `controller.localId` is empty **and the rewritten brief needs identity**
+(inbox, send, call, identities), show a pairing screen. Do not pair before a
+game or other UI that does not need identity.
 
 1. Call `await controller.startBrowserPairing()`.
 2. If the result has `useScanQrCode`, call `controller.scanQrCode()` instead (phone).
@@ -144,9 +188,10 @@ the active one — show them all.
 
 **Screens**
 
-Conversation list, chat, new chat, new group, pairing, identities, ringing,
-incoming call, voice call, video call. Styling, layout, framework, and navigation
-are entirely your choice.
+Whatever the rewritten brief needs, plus pairing and identities when those
+capabilities are used. Conversation list, chat, new chat, new group, ringing,
+incoming call, voice call, and video call when the idea uses messaging or calls.
+Styling, layout, framework, and navigation are entirely your choice.
 
 **Never do these**
 
@@ -167,11 +212,18 @@ inventing an API.
 
 ## After the build
 
-1. Publish the site over HTTPS and open it in a desktop browser: it should show
-   pairing, then a QR you can scan with the Arnacon phone app.
+1. Publish the site over HTTPS and open it in a desktop browser. Pairing appears
+   when the app needs identity, then a QR you can scan with the Arnacon phone app.
 2. To run it as the phone's product UI, set the Arnacon Android Product URL
    Override (`setProductUrlOverride`) to the published URL. Per-product `htmlUrl`
    is not wired on native yet, so the override is the only route today.
 
 The builder's in-editor preview may block external modules and has no native
 bridge, so pairing can fail there. Judge the published URL.
+
+---
+
+USER IDEA (write this in your own words):
+
+A simple Flappy Bird game. Sometimes you collect a gem. A gem lets you send a
+message or open your inbox.
