@@ -60,9 +60,10 @@ are messages, not because the site is hosted there.
 6. Hand the rewritten brief to [ploy-prompt.md](ploy-prompt.md) and build.
 
 The **arnacon-translate** skill (`.agents/skills/arnacon-translate/SKILL.md`)
-runs these steps before any HTML. The paste-in wrapper
-([user-prompt.md](user-prompt.md)) is the same path when the builder has no
-skill; the user only fills a **USER IDEA** slot.
+prints this brief then **builds the site in the same turn**. The paste-in
+wrapper ([user-prompt.md](user-prompt.md)) is the same path when the builder
+has no skill; the user only fills a **USER IDEA** slot. Restyles skip this
+skill.
 
 ## Feature map
 

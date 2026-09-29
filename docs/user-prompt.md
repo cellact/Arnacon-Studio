@@ -11,7 +11,8 @@ Replace `<ARNACON_HOST>` with the deployed Arnacon host origin before pasting, o
 delete that option if you copy the runtime files into the project.
 
 The recipe behind the translator is [translate.md](translate.md). When skills
-are attached, **arnacon-translate** does Step 1 without this paste.
+are attached, **arnacon-translate** rewrites and builds in the same turn
+(new product ideas only). Restyles use **arnacon-skin** and skip this paste.
 
 ---
 

@@ -1,10 +1,10 @@
 ---
 name: arnacon-translate
 description: >-
-  Rewrites a plain-language app idea onto Arnacon before any UI is built.
-  Tags features as UI, capability, or drop; pairing only when identity is needed.
-  Use when the user describes a product in everyday words, fills a USER IDEA
-  slot, mentions Ploy/Base44 from an idea, Flappy, puzzle, overlay, or translate.
+  Rewrites a brand-new plain-language product idea onto Arnacon, then builds
+  the site in the same turn. Use only when the user invents a new app (game,
+  board, overlay, USER IDEA) from scratch. Do not use for restyling an
+  existing skin, editing host/, lint, or pairing/runtime fixes.
 ---
 
 # Arnacon translate
@@ -16,9 +16,11 @@ calls via `window.top.controller`. Do not invent a backend.
 The user never needs to say `controller` or `localId`. Do not ask them to
 rephrase. Their wording never overrides the drop list.
 
-## Must do this first
+## Same turn: brief, then the site
 
-**Do not write HTML, CSS, or JS until the rewritten brief is in the reply.**
+Print the rewritten brief, **then write the HTML/CSS/JS in this same reply**.
+Do not stop after the brief. Do not wait for another skill. Do not refuse to
+generate files because a brief came first.
 
 1. List every feature in the idea.
 2. Tag each **UI**, **capability**, or **drop**.
@@ -26,8 +28,10 @@ rephrase. Their wording never overrides the drop list.
 4. Pairing only on the path that needs identity (`localId` empty). Not a login
    wall in front of a game or other UI.
 5. One sentence per drop (why).
-6. Print the brief using the template below, then build with **arnacon-skin**
-   (`docs/ploy-prompt.md`). Run `npm run lint:skin` if output is in `skin/`.
+6. Print the brief (template below).
+7. Build the site immediately using `docs/ploy-prompt.md` (runtime in `<head>`,
+   five `host/` files or imported `runtime.mjs`, controller methods only).
+   If output is `skin/`, run `npm run lint:skin`.
 
 Full recipe: `docs/translate.md`. Gaps: `docs/native-gaps.md`.
 Builders with no skill: `docs/user-prompt.md`.
@@ -81,4 +85,5 @@ Pairing: only when they try inbox/send and localId is empty
 Runtime: their origin + five host/ files
 ```
 
-Game loop never calls the controller. Gem spend is the only bridge into chat.
+Then emit the game and messaging screens. Game loop never calls the controller.
+Gem spend is the only bridge into chat.

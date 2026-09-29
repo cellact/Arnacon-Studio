@@ -29,10 +29,12 @@ skin URLs are not yet persisted by native.
 
 If the builder has no Arnacon skill attached, paste
 [docs/ploy-prompt.md](docs/ploy-prompt.md) into it instead. For a
-plain-language product idea, the **arnacon-translate** skill runs first
+brand-new product in everyday language, **arnacon-translate** rewrites and
+builds in the same turn
 (`.agents/skills/arnacon-translate/SKILL.md`). Without skills, paste
 [docs/user-prompt.md](docs/user-prompt.md) and fill only the USER IDEA slot;
-the rewrite recipe is [docs/translate.md](docs/translate.md).
+the rewrite recipe is [docs/translate.md](docs/translate.md). Restyles use
+the skin skill only.
 
 See [AGENTS.md](AGENTS.md) and [docs/ploy-base44.md](docs/ploy-base44.md).
 

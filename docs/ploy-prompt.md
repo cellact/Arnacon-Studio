@@ -4,10 +4,10 @@ Use this when the builder has no Arnacon skill attached. It is the same contract
 [`.agents/skills/arnacon-skin/SKILL.md`](../.agents/skills/arnacon-skin/SKILL.md),
 written as a single instruction block.
 
-For an idea in everyday language, the **arnacon-translate** skill runs first.
-Without skills, paste [user-prompt.md](user-prompt.md) instead (that wrapper
-translates first, then uses this contract). The rewrite recipe is
-[translate.md](translate.md). Do not replace this file with a casual prompt.
+For an idea in everyday language, the **arnacon-translate** skill rewrites then
+builds in the **same turn**. Without skills, paste [user-prompt.md](user-prompt.md)
+instead. The rewrite recipe is [translate.md](translate.md). Do not replace this
+file with a casual prompt.
 
 Replace `<ARNACON_HOST>` with the deployed Arnacon host origin before pasting, or
 delete that option if you copy the runtime files into the project.
