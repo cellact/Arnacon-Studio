@@ -14,7 +14,7 @@ Gaps that have no native method yet are listed in [native-gaps.md](native-gaps.m
 ## Overlay, not a messenger template
 
 Arnacon is a **capability overlay**. The app does not have to look like chat.
-
+ 
 Tag every feature in the idea as one of:
 
 | Tag | Meaning |
@@ -59,8 +59,10 @@ are messages, not because the site is hosted there.
 5. State what was dropped and why (one sentence each).
 6. Hand the rewritten brief to [ploy-prompt.md](ploy-prompt.md) and build.
 
-The paste-in wrapper ([user-prompt.md](user-prompt.md)) runs these steps in one
-Ploy paste so the user only fills a **USER IDEA** slot.
+The **arnacon-translate** skill (`.agents/skills/arnacon-translate/SKILL.md`)
+runs these steps before any HTML. The paste-in wrapper
+([user-prompt.md](user-prompt.md)) is the same path when the builder has no
+skill; the user only fills a **USER IDEA** slot.
 
 ## Feature map
 

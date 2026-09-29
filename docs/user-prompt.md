@@ -10,7 +10,8 @@ This wrapper **translates first**, then **builds** with the same contract as
 Replace `<ARNACON_HOST>` with the deployed Arnacon host origin before pasting, or
 delete that option if you copy the runtime files into the project.
 
-The recipe behind the translator is [translate.md](translate.md).
+The recipe behind the translator is [translate.md](translate.md). When skills
+are attached, **arnacon-translate** does Step 1 without this paste.
 
 ---
 

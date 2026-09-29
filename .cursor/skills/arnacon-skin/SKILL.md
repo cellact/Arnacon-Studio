@@ -8,6 +8,10 @@ description: >-
 
 # Arnacon skin
 
+If the user described a product in everyday language (a game, a board, a
+USER IDEA slot), follow **arnacon-translate** first. Print the rewritten
+brief before any HTML. Then use this file.
+
 Arnacon is not a SaaS backend. Native owns identity, crypto, storage, signaling, and delivery. Ploy/Base44 UI may talk **only** to `window.top.controller`.
 
 ## Do
@@ -94,4 +98,5 @@ If lint fails on an unknown method, remove the call. Do not add a REST fallback.
 ## Builders without skill support
 
 Give the user `docs/ploy-prompt.md`, the same contract as one paste-in block.
-Change it and this file together.
+Change it and this file together. Plain-language ideas: skill `arnacon-translate`
+(paste: `docs/user-prompt.md`).
