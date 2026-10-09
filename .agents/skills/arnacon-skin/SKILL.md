@@ -22,7 +22,7 @@ Arnacon is not a SaaS backend. Native owns identity, crypto, storage, signaling,
 - Call existing `arnacon-controller` methods (`sendMessage`, `getRecentSessions`, `callSession`, `scanQrCode`, …).
 - PAIRING / QR pairing is allowed. Computer tab: `startBrowserPairing()` → `{ room, pairingUri, status }`; unlink with `stopBrowserPairing()`; listen `pairing-status` and `pairing-ready`. Phone WebView: `useScanQrCode` then `scanQrCode()`. Do not open a WebSocket in skin HTML.
 - Keep hash params: `screen`, `localId`, `identityKind`, `sessionId`. Never invent `localId`.
-- Run `npm run lint:skin` before finishing.
+- Run `npm run ship` before finishing. Loop until it passes.
 
 ## Self-hosted Ploy / Base44 site
 
@@ -92,10 +92,10 @@ Host owns media. Skin never creates a `RTCPeerConnection`.
 ## After changing skin/
 
 ```bash
-npm run lint:skin
+npm run ship
 ```
 
-If lint fails on an unknown method, remove the call. Do not add a REST fallback.
+If it fails, fix and run again. Do not publish or stop. If lint fails on an unknown method, remove the call. Do not add a REST fallback.
 
 ## Builders without skill support
 

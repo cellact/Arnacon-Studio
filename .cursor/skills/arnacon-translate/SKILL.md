@@ -31,7 +31,7 @@ generate files because a brief came first.
 6. Print the brief (template below).
 7. Build the site immediately using `docs/ploy-prompt.md` (runtime in `<head>`,
    five `host/` files or imported `runtime.mjs`, controller methods only).
-   If output is `skin/`, run `npm run lint:skin`.
+   If output is `skin/`, run `npm run ship` and loop until it passes.
 
 Full recipe: `docs/translate.md`. Gaps: `docs/native-gaps.md`.
 Builders with no skill: `docs/user-prompt.md`.

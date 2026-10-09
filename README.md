@@ -5,7 +5,7 @@ This repo hosts an Arnacon product. Native owns identity, crypto, storage, signa
 ## Run locally
 
 ```bash
-npm run lint:skin
+npm run ship
 npm run host
 ```
 

@@ -7,7 +7,7 @@ Ploy / Base44 HTML for this product. The boot page at `/` creates `window.top.co
 3. otherwise `mainscreen.html`
 
 ```bash
-npm run lint:skin
+npm run ship
 npm run host
 ```
 

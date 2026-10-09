@@ -214,6 +214,10 @@ inventing an API.
 
 ## After the build
 
+0. In this repo run `npm run ship`. Fix and re-run until it passes. Do not
+   publish a failing tree. Against a published origin:
+   `npm run ship -- --url=https://your-site`.
+
 1. Publish the site over HTTPS and open it in a desktop browser. Pairing appears
    when the app needs identity, then a QR you can scan with the Arnacon phone app.
 2. To run it as the phone's product UI, set the Arnacon Android Product URL
@@ -227,5 +231,5 @@ bridge, so pairing can fail there. Judge the published URL.
 
 USER IDEA (write this in your own words):
 
-A simple Flappy Bird game. Sometimes you collect a gem. A gem lets you send a
-message or open your inbox.
+One existing group is the school gate. A parent sends HERE and the child's name. My page lists those names in order. I send SENT and the same name when the child has gone out, and that name leaves the list. If this account can make calls, I can ring the group.
+

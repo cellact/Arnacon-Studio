@@ -4,6 +4,9 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { lintOutput, sdkBindings } from '../lib/lint-output.mjs';
+import { checkConformance } from '../lib/conformance.mjs';
+import { runGoldPath } from '../lib/gold-path.mjs';
+import { createMockController } from '../lib/mock-controller.mjs';
 import { pairingUriFor } from '../host/browser-pairing.mjs';
 import { lintSkinDir } from './lint-skin.mjs';
 
@@ -17,6 +20,7 @@ ok(!existsSync(join(root, 'scripts/serve.mjs')), 'studio static server should be
 ok(!lintOutput({ 'x.html': 'fetch("/api/messages")' }, sdkBindings()).ok);
 ok(lintOutput({ 'x.html': 'controller.sendMessage("1","hi")' }, sdkBindings()).ok);
 ok(!lintOutput({ 'pairing.html': 'new WebSocket("wss://x")' }, sdkBindings()).ok);
+ok(!lintOutput({ 'x.html': 'new RTCPeerConnection()' }, sdkBindings()).ok);
 
 ok(pairingUriFor('ABC123').includes('room=ABC123'));
 ok(pairingUriFor('ABC123').startsWith('arnacon://browser-relay?'));
@@ -98,5 +102,37 @@ try {
 } finally {
   rmSync(restForbidden, { recursive: true, force: true });
 }
+
+const gold = await runGoldPath(createMockController({ localId: '' }));
+ok(gold.ok, JSON.stringify(gold.errors));
+
+const oneArg = await runGoldPath({
+  localId: '',
+  async getRecentSessions() {
+    return { sessions: [{ sessionId: '1', lastMessageContent: 'x' }] };
+  },
+  async getMessages() {
+    return { messages: [{ content: 'x', author: 'a' }] };
+  },
+  async sendMessage() {},
+  async startBrowserPairing() {
+    return { pairingUri: 'arnacon://browser-relay?room=X' };
+  },
+});
+ok(!oneArg.ok, 'gold-path must fail sendMessage with one argument');
+
+const noRuntime = checkConformance({
+  root: join(root, 'no-such-root'),
+  files: { 'app.html': 'controller.sendMessage("1", "hi")' },
+});
+ok(!noRuntime.ok);
+
+const badSend = checkConformance({
+  root,
+  files: {
+    'chat.html': 'controller.sendMessage(text); controller.startBrowserPairing(); const localId = "";',
+  },
+});
+ok(badSend.errors.some((e) => /two arguments/.test(e.message)));
 
 console.log('self-check passed');

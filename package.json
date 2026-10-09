@@ -41,10 +41,12 @@
     }
   },
   "scripts": {
-    "check": "node scripts/self-check.mjs",
+    "check": "node scripts/self-check.mjs && node scripts/ship.mjs",
     "dev": "node host/serve.mjs",
     "host": "node host/serve.mjs",
     "lint:skin": "node scripts/lint-skin.mjs",
+    "ship": "node scripts/ship.mjs",
+    "conform": "node scripts/ship.mjs",
     "package:extension": "vsce package --no-dependencies"
   },
   "devDependencies": {

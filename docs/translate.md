@@ -131,6 +131,6 @@ Todos are **UI** (in-page state). Cloud sync is **drop** — no Firestore, no
 
 ## After the rewrite
 
-Build from [ploy-prompt.md](ploy-prompt.md). Run `npm run lint:skin` if the
-output lands in `skin/`. If lint fails on an unknown method, remove the call.
-Do not add a REST fallback.
+Build from [ploy-prompt.md](ploy-prompt.md). Run `npm run ship` if the output
+lands in this repo. Do not stop until it exits 0. If lint fails on an unknown
+method, remove the call. Do not add a REST fallback.

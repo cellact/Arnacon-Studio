@@ -6,7 +6,7 @@ Ploy and Base44 can restyle an Arnacon product. They cannot become Arnacon. Ther
 
 1. **Boot page** (`host/index.html`) — creates `window.top.controller` (native bridge, or a mock when you run `npm run host`).
 2. **Skin folder** (`skin/`) — drop Ploy Code Sync / Base44 export here. The boot iframe loads `app.html`, else `index.html`, else `mainscreen.html`.
-3. **Lint** (`npm run lint:skin`) — merge gate. Forbidden: `fetch`, `/api/`, Express, OAuth, wallets. Allowed: `controller.*` methods on the SDK allowlist.
+3. **Ship** (`npm run ship`) — merge gate. Lint plus harness conformance, gold-path mock (`lastMessageContent`, two-arg `sendMessage`), and a live fetch of `/` and the five `host/` modules. Loop until it passes.
 4. **Skills** — [AGENTS.md](../AGENTS.md), `.agents/skills/arnacon-skin/SKILL.md`, and `.agents/skills/arnacon-translate/SKILL.md`. Point Ploy at this repo (or copy both skills into the ployspace repo). Translate is only for a brand-new product idea and still emits the site in the same turn. Restyles use the skin skill only.
 5. **Paste-in prompt** — [ploy-prompt.md](ploy-prompt.md). The same contract as one instruction block, for a builder with no skill attached. Plain-language ideas: [user-prompt.md](user-prompt.md) (recipe: [translate.md](translate.md)).
 
@@ -51,7 +51,7 @@ Validate the published HTTPS URL.
 
 ```bash
 # restyle skin/ in Ploy, Base44, or by hand
-npm run lint:skin
+npm run ship
 npm run host         # http://127.0.0.1:4175/
 ```
 

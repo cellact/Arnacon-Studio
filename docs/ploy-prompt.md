@@ -168,6 +168,10 @@ inventing an API.
 
 ## After the build
 
+0. In the Arnacon-Studio repo run `npm run ship`. Do not publish until it
+   exits 0. Re-generate and fix until it is green. For a deployed origin:
+   `npm run ship -- --url=https://your-site`.
+
 1. Publish the site over HTTPS and open it in a desktop browser: it should show
    pairing, then a QR you can scan with the Arnacon phone app.
 2. To run it as the phone's product UI, set the Arnacon Android Product URL

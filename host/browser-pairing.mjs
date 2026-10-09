@@ -14,6 +14,8 @@ export const DEFAULT_RELAY_WSS = 'wss://arnacon-phone-relay-proxy-zmu4vmardq-ew.
 const ROOM_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const KEEPALIVE_MS = 15000;
 const KEEPALIVE_TIMEOUT_MS = 60000;
+const HELLO_RETRY_MS = 4000;
+const TOKEN_RACE_MS = 600;
 const TOKEN_KEY = 'arnacon.pairingToken';
 const ROOM_KEY = 'arnacon.pairingRoom';
 
@@ -92,6 +94,11 @@ function attachBrowserRelayPairing(controller, options) {
   let reconnectAttempt = 0;
   let lastPongAt = 0;
   let stayConnected = false;
+  let sessionReady = false;
+  let serverStopped = false;
+  let helloInFlight = null;
+  let helloRetryTimer = null;
+  let pairingTokenIgnoreTimer = null;
 
   function clearKeepalive() {
     if (keepaliveTimer) {
@@ -105,6 +112,37 @@ function attachBrowserRelayPairing(controller, options) {
       clearTimeout(reconnectTimer);
       reconnectTimer = null;
     }
+  }
+
+  function clearHelloRetry() {
+    if (helloRetryTimer) {
+      clearInterval(helloRetryTimer);
+      helloRetryTimer = null;
+    }
+  }
+
+  function clearPairingTokenIgnore() {
+    if (pairingTokenIgnoreTimer) {
+      clearTimeout(pairingTokenIgnoreTimer);
+      pairingTokenIgnoreTimer = null;
+    }
+  }
+
+  function sendHello(ws, token) {
+    if (!token || !ws || ws.readyState !== WebSocket.OPEN) return;
+    helloInFlight = token;
+    try {
+      ws.send(JSON.stringify({ action: 'hello', body: { token } }));
+    } catch {
+      /* closed */
+    }
+  }
+
+  function acceptPairingToken(token, ws) {
+    if (!token) return;
+    helloInFlight = token;
+    persist(TOKEN_KEY, token);
+    sendHello(ws, token);
   }
 
   function startKeepalive(ws) {
@@ -131,12 +169,59 @@ function attachBrowserRelayPairing(controller, options) {
 
   function scheduleReconnect() {
     if (!stayConnected || !room) return;
+    if (serverStopped && !read(TOKEN_KEY)) return;
     clearReconnect();
     reconnectAttempt += 1;
     const delay = reconnectAttempt === 1
       ? 400
       : Math.min(8000, 400 * Math.pow(1.5, reconnectAttempt - 1));
-    reconnectTimer = setTimeout(() => connect(room), delay);
+    reconnectTimer = setTimeout(() => connect(room, { reconnect: true }), delay);
+  }
+
+  function handleSocketClosed(reason) {
+    clearKeepalive();
+    // A signaling flap must not end the call. The phone's call-ended message
+    // tears the media down; this socket only reconnects.
+    if (reason === 'server-shutdown') {
+      if (read(TOKEN_KEY)) {
+        stayConnected = true;
+        serverStopped = false;
+        if (sessionReady) {
+          setStatus('disconnected', {
+            detail: 'Waiting for your phone…',
+            localId: controller.localId,
+          });
+        }
+        scheduleReconnect();
+        return;
+      }
+      sessionReady = false;
+      stayConnected = false;
+      serverStopped = true;
+      setStatus('error', { detail: 'Phone stopped the session.' });
+      return;
+    }
+    if (stayConnected) {
+      if (sessionReady) {
+        setStatus('disconnected', {
+          detail: 'Waiting for your phone…',
+          localId: controller.localId,
+        });
+      } else if (status !== 'idle') {
+        setStatus('disconnected');
+      }
+      scheduleReconnect();
+    }
+  }
+
+  function startFreshRoom(detail) {
+    clearPairingTokenIgnore();
+    clearHelloRetry();
+    helloInFlight = null;
+    sessionReady = false;
+    persist(TOKEN_KEY, '');
+    controller.localId = '';
+    connect(newRoomCode(), { detail });
   }
 
   function snapshot() {
@@ -179,6 +264,7 @@ function attachBrowserRelayPairing(controller, options) {
 
   function closeSocket() {
     clearKeepalive();
+    clearHelloRetry();
     if (!socket) return;
     const ws = socket;
     socket = null;
@@ -195,17 +281,21 @@ function attachBrowserRelayPairing(controller, options) {
     }
   }
 
-  function connect(nextRoom) {
+  function connect(nextRoom, options = {}) {
     room = nextRoom;
     persist(ROOM_KEY, room);
     stayConnected = true;
+    serverStopped = false;
     clearReconnect();
-    setStatus('connecting');
+    const quiet = !!(options.reconnect && sessionReady);
+    const detail = options.detail ? { detail: options.detail } : {};
+    if (!quiet) setStatus('connecting', detail);
     if (mock) {
       setStatus('waiting');
       const offer = snapshot();
       setTimeout(() => {
         controller.localId = controller.localId || 'preview.arnacon';
+        sessionReady = true;
         setStatus('paired', { localId: controller.localId, identityKind: 'arnacon' });
         emitOn(controller, 'pairing-ready', {
           localId: controller.localId,
@@ -226,11 +316,24 @@ function attachBrowserRelayPairing(controller, options) {
     socket = ws;
     ws.onopen = () => {
       if (socket !== ws) return;
-      reconnectAttempt = 0;
-      setStatus('waiting');
+      // A socket that dies before pairing-token or connection-established
+      // must keep backing off. Those two signals reset reconnectAttempt.
+      if (!quiet) setStatus('waiting', detail);
       startKeepalive(ws);
+      helloInFlight = read(TOKEN_KEY) || null;
+      clearPairingTokenIgnore();
+      clearHelloRetry();
       const token = read(TOKEN_KEY);
-      if (token) sendPayload({ action: 'hello', body: { token } });
+      if (token) {
+        sendHello(ws, token);
+        helloRetryTimer = setInterval(() => {
+          if (socket !== ws || sessionReady || ws.readyState !== WebSocket.OPEN) {
+            clearHelloRetry();
+            return;
+          }
+          sendHello(ws, read(TOKEN_KEY));
+        }, HELLO_RETRY_MS);
+      }
       flushBuffer();
     };
     ws.onmessage = (event) => {
@@ -240,11 +343,43 @@ function attachBrowserRelayPairing(controller, options) {
         const data = JSON.parse(raw);
         if (data.action === 'ws-pong') return;
         if (data.action === 'pairing-token' && data.body && data.body.token) {
-          persist(TOKEN_KEY, data.body.token);
-          sendPayload({ action: 'hello', body: { token: data.body.token } });
+          const incoming = String(data.body.token);
+          reconnectAttempt = 0;
+          // Phone re-announce can overwrite a hello already in flight.
+          // Wait briefly for hello-rejected; only then accept the new token.
+          if (helloInFlight && helloInFlight !== incoming) {
+            clearPairingTokenIgnore();
+            pairingTokenIgnoreTimer = setTimeout(() => {
+              pairingTokenIgnoreTimer = null;
+              if (socket !== ws || !helloInFlight || helloInFlight === incoming) return;
+              acceptPairingToken(incoming, ws);
+            }, TOKEN_RACE_MS);
+            return;
+          }
+          acceptPairingToken(incoming, ws);
           return;
         }
+        if (data.action === 'hello-rejected') {
+          // Remembered token does not match this room. Keep the room so the
+          // phone can still find this tab. A new QR only happens if the user unlinks.
+          setStatus('error', {
+            detail: 'Phone did not accept this computer. Open Arnacon or link a different phone.',
+            localId: controller.localId,
+          });
+          return;
+        }
+        if (data.action === 'pairing-taken') {
+          startFreshRoom('This room was paired by another tab. New QR ready.');
+          return;
+        }
+        if (data.action === 'server-shutdown' && !read(TOKEN_KEY)) {
+          serverStopped = true;
+          stayConnected = false;
+        }
         if (data.action === 'connection-established') {
+          reconnectAttempt = 0;
+          clearHelloRetry();
+          sessionReady = true;
           const localId = data.body && data.body.localId;
           const identityKind = (data.body && data.body.identityKind) || 'arnacon';
           if (localId) controller.localId = localId;
@@ -266,13 +401,17 @@ function attachBrowserRelayPairing(controller, options) {
         controller.receiveData(raw);
       }
     };
-    ws.onerror = () => setStatus('error', { detail: 'relay connection failed' });
+    ws.onerror = () => {
+      if (sessionReady && stayConnected) return;
+      setStatus('error', { detail: 'relay connection failed' });
+    };
     ws.onclose = (event) => {
       if (socket !== ws) return;
       socket = null;
-      clearKeepalive();
-      if (status !== 'idle') setStatus('disconnected');
-      scheduleReconnect();
+      const reason = serverStopped || (event && event.reason === 'server-shutdown')
+        ? 'server-shutdown'
+        : ((event && event.reason) || 'closed');
+      handleSocketClosed(reason);
     };
     return snapshot();
   }
@@ -284,7 +423,12 @@ function attachBrowserRelayPairing(controller, options) {
 
   controller.stopBrowserPairing = function stopBrowserPairing() {
     stayConnected = false;
+    serverStopped = true;
+    sessionReady = false;
+    helloInFlight = null;
     clearReconnect();
+    clearHelloRetry();
+    clearPairingTokenIgnore();
     reconnectAttempt = 0;
     persist(TOKEN_KEY, '');
     persist(ROOM_KEY, '');
